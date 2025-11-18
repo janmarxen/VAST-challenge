@@ -10,6 +10,25 @@ The challenge focuses on three key questions about the fictional city of Engagem
 
 The dataset contains **~120 million data points** across 15 months with 5-minute increments.
 
+### Detailed Challenge Questions
+
+**Question 1: Business Prosperity**
+> Over the period covered by the dataset, which businesses appear to be more prosperous? Which appear to be struggling? Describe your rationale for your answers.
+> 
+> **Limit**: 10 images and 500 words.
+
+**Question 2: Resident Financial Health**
+> How does the financial health of the residents change over the period covered by the dataset? How do wages compare to the overall cost of living in Engagement? Are there groups that appear to exhibit similar patterns? Describe your rationale for your answers.
+> 
+> **Limit**: 10 images and 500 words.
+
+**Question 3: Employer Health & Turnover**
+> Describe the health of the various employers within the city limits. What employment patterns do you observe? Do you notice any areas of particularly high or low turnover?
+> 
+> **Limit**: 10 images and 500 words.
+
+---
+
 ## 1. Visualization Strategy & Data Transformation Ideas
 
 ### Question 1: Business Prosperity Analysis

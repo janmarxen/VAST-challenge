@@ -1,0 +1,14 @@
+# Git ignore for project root
+__pycache__/
+*.py[cod]
+node_modules/
+build/
+.DS_Store
+*.csv
+*.db
+*.sqlite
+.env
+.env.local
+*.log
+*.zip
+data/
