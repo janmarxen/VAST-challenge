@@ -62,7 +62,7 @@ VAST-challenge/
 - Docker and Docker Compose installed
 - Git
 
-### Running with Docker (Recommended)
+### Running with Docker
 
 1. Clone the repository:
 ```bash
@@ -77,34 +77,11 @@ docker-compose up --build
 3. Access the application:
    - **Frontend**: http://localhost:3000
    - **Backend API**: http://localhost:5000
-   - **Health check**: http://localhost:5000/health
 
 4. Stop services:
 ```bash
 docker-compose down
 ```
-
-### Running Locally (Development)
-
-#### Backend Setup
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python app.py
-```
-
-Backend runs on `http://localhost:5000`
-
-#### Frontend Setup
-```bash
-cd frontend
-npm install
-npm start
-```
-
-Frontend runs on `http://localhost:3000`
 
 ## Team Development Workflow
 
@@ -158,25 +135,6 @@ git push origin main
 
 **Rule**: Only push to `main` after local tests pass. This prevents frontend issues from untested backend changes.
 
-## API Endpoints
-
-### Business Prosperity (`/api/business`)
-- `GET /revenue-timeseries` - Monthly revenue trends
-- `GET /market-share` - Market share over time
-- `GET /performance-metrics` - Multi-dimensional business metrics
-
-### Resident Financial Health (`/api/resident`)
-- `GET /wage-vs-cost` - Wage vs cost of living data
-- `GET /financial-trajectories` - Financial health trajectories
-- `GET /clusters` - Clustering results
-- `GET /parallel-coordinates` - Multi-dimensional data
-
-### Employer Health (`/api/employer`)
-- `GET /turnover-heatmap` - Turnover rate matrix
-- `GET /job-flow` - Job transition flows (Sankey)
-- `GET /transition-network` - Network graph data
-- `GET /turnover-distribution` - Statistical distributions
-
 ## Testing
 
 ### Backend Tests
@@ -193,19 +151,13 @@ pytest tests/test_business_router.py
 pytest --cov=routers --cov=services
 ```
 
-### Frontend Tests
-```bash
-cd frontend
-npm test
-```
-
 ## Data Processing Pipeline
 
 1. **Extract**: Load raw CSV files from `data/raw/`
 2. **Transform**: 
-   - Aggregate 5-minute data to monthly summaries
-   - Calculate derived metrics (turnover rates, cost of living index)
-   - Perform clustering and dimensionality reduction
+   - Example: Aggregate 5-minute data to monthly summaries
+   - Example: Calculate derived metrics (turnover rates, cost of living index)
+   - Example: Perform clustering and dimensionality reduction
 3. **Load**: Save processed data to `data/processed/` or PostgreSQL
 
 Data transformation scripts should be added to `backend/services/` files.
@@ -229,55 +181,6 @@ Create `.env` file in project root:
 FLASK_ENV=production
 REACT_APP_API_URL=http://your-backend-url/api
 ```
-
-## Visualization Guidelines
-
-### D3 Integration Pattern
-
-**Best Practice**: React manages DOM, D3 for data transformations
-
-```jsx
-import React, { useEffect, useRef } from 'react';
-import * as d3 from 'd3';
-
-function MyChart({ data }) {
-  const svgRef = useRef();
-
-  useEffect(() => {
-    const svg = d3.select(svgRef.current);
-    
-    // D3 creates scales
-    const xScale = d3.scaleTime()...
-    const yScale = d3.scaleLinear()...
-    
-    // React renders, D3 provides path data
-    const line = d3.line()
-      .x(d => xScale(d.date))
-      .y(d => yScale(d.value));
-    
-    svg.select('.line').attr('d', line(data));
-  }, [data]);
-
-  return <svg ref={svgRef}>...</svg>;
-}
-```
-
-### Interaction Techniques
-- **Brushing and Linking**: Shared React state for coordinated views
-- **Hover Tooltips**: D3 event handlers updating React state
-- **Filtering**: Dropdown controls re-fetching filtered data
-
-## Resources
-
-- [VAST Challenge 3 Details](https://vast-challenge.github.io/2025/)
-- [D3.js Documentation](https://d3js.org/)
-- [React Documentation](https://react.dev/)
-- [Flask Documentation](https://flask.palletsprojects.com/)
-
-## Team
-
-Data Visualization Project | EUMaster4HPC | Semester 3
-
 ---
 
 For component-specific documentation, see:
