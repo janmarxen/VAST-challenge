@@ -16,19 +16,19 @@ function App() {
             className={activeView === 'business' ? 'active' : ''}
             onClick={() => setActiveView('business')}
           >
-            Question 1: Business Prosperity
+            Business Prosperity
           </button>
           <button
             className={activeView === 'resident' ? 'active' : ''}
             onClick={() => setActiveView('resident')}
           >
-            Question 2: Resident Financial Health
+            Resident Financial Health
           </button>
           <button
             className={activeView === 'employer' ? 'active' : ''}
             onClick={() => setActiveView('employer')}
           >
-            Question 3: Employer Health & Turnover
+            Employer Health & Turnover
           </button>
         </nav>
       </header>

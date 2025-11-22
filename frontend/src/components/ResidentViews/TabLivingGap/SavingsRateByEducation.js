@@ -1,0 +1,74 @@
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
+const SavingsRateByEducation = ({ selectedMonth }) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const requestUrl = `/api/resident/geographic-financial-health`;
+        const response = await axios.get(requestUrl);
+        setData(response.data);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching geographic data:', error);
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) return <div className="text-gray-400 italic">Loading stats...</div>;
+  if (!data || !data.education_stats) return <div className="text-gray-400 italic">No data available</div>;
+
+  const eduStats = data.education_stats.filter(s => s.month === selectedMonth);
+
+  if (!eduStats || eduStats.length === 0) return <div className="text-gray-400 italic">No data for this month</div>;
+
+  return (
+    <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 h-full">
+      <h3 className="font-bold text-lg mb-4 text-gray-800">Savings Rate by Education</h3>
+      <div className="space-y-5">
+        {eduStats.map(stat => {
+          const rate = stat.SavingsRate * 100;
+          const color = rate < 0 ? 'bg-red-500' : 'bg-green-500';
+          // Scale: -50% to +50% maps to 0-100% of the half-width
+          // We want 0 at 50%.
+          // If rate is -25%, width is 25%, left is 25%.
+          // If rate is +25%, width is 25%, left is 50%.
+          const barWidth = Math.min(Math.abs(rate), 50); 
+          const leftPos = rate < 0 ? 50 - barWidth : 50;
+          
+          return (
+            <div key={stat.educationLevel}>
+              <div className="flex justify-between text-sm mb-1 font-medium text-gray-600">
+                <span>{stat.educationLevel}</span>
+                <span className={rate < 0 ? 'text-red-600' : 'text-green-600'}>{rate.toFixed(1)}%</span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-3 relative overflow-hidden">
+                {/* Center line */}
+                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-400 z-10"></div>
+                <div 
+                  className={`h-3 absolute ${color} transition-all duration-500`} 
+                  style={{
+                    left: `${leftPos}%`,
+                    width: `${barWidth}%`
+                  }}
+                ></div>
+              </div>
+            </div>
+          )
+        })}
+        <div className="flex justify-between text-xs text-gray-400 mt-2 px-1">
+          <span>-50%</span>
+          <span>0%</span>
+          <span>+50%</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SavingsRateByEducation;

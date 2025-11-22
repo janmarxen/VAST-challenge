@@ -1,17 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
-import { fetchWageVsCost } from '../../utils/api';
+import { fetchWageVsCost } from '../../../utils/api';
 
 /**
  * Wage vs Cost of Living Scatter Plot
  * Shows relationship between wages and living costs
  */
-function WageVsCostScatter({ onFilter, filterHaveKids }) {
+function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth }) {
   const containerRef = useRef();
   const svgRef = useRef();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const colorScaleRef = useRef(d3.scaleOrdinal(d3.schemeTableau10));
 
   // Handle resize
   useEffect(() => {
@@ -32,7 +33,9 @@ function WageVsCostScatter({ onFilter, filterHaveKids }) {
   }, []);
 
   useEffect(() => {
-    fetchWageVsCost(filterHaveKids)
+    setLoading(true);
+    // Pass parameters as an object
+    fetchWageVsCost({ month: selectedMonth })
       .then(response => {
         setData(response);
         setLoading(false);
@@ -41,7 +44,13 @@ function WageVsCostScatter({ onFilter, filterHaveKids }) {
         console.error('Error fetching wage vs cost data:', error);
         setLoading(false);
       });
-  }, [filterHaveKids]);
+  }, [selectedMonth]);
+
+  useEffect(() => {
+    if (!data.length) return;
+    const uniqueClusters = Array.from(new Set(data.map(d => d.Cluster)));
+    colorScaleRef.current.domain(uniqueClusters);
+  }, [data]);
 
   useEffect(() => {
     if (!data.length || dimensions.width === 0 || dimensions.height === 0) return;
@@ -57,9 +66,13 @@ function WageVsCostScatter({ onFilter, filterHaveKids }) {
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
     // Scales
-    // User requested capping Cost of Living at ~4000
-    const xMax = 4500; 
-    const yExtent = d3.extent(data, d => d.Income);
+    // User requested capping Cost of Living at ~4000 AND filtering data
+    const xMax = 4000; 
+    
+    // Filter data points that exceed the xMax
+    const filteredData = data.filter(d => d.CostOfLiving <= xMax);
+    
+    const yExtent = d3.extent(filteredData, d => d.Income);
     const yMax = yExtent[1] || 0;
 
     const xScale = d3.scaleLinear()
@@ -70,7 +83,7 @@ function WageVsCostScatter({ onFilter, filterHaveKids }) {
       .domain([0, yMax * 1.1])
       .range([height, 0]);
 
-    const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+    const colorScale = colorScaleRef.current;
 
     // Axes
     g.append('g')
@@ -120,7 +133,7 @@ function WageVsCostScatter({ onFilter, filterHaveKids }) {
 
     // Points
     const circles = g.selectAll('circle')
-      .data(data)
+      .data(filteredData)
       .enter()
       .append('circle')
       .attr('cx', d => xScale(d.CostOfLiving))
@@ -141,7 +154,7 @@ function WageVsCostScatter({ onFilter, filterHaveKids }) {
 
     function brushed(event) {
       if (!event.selection) {
-        circles.attr('fill', d => colorScale(d.Cluster)).attr('opacity', 0.6);
+        circles.attr('fill', d => colorScale(d.Cluster)).attr('opacity', 0.6).attr('r', 4);
         if (onFilter) onFilter(null); // Reset filter
         return;
       }
@@ -160,12 +173,53 @@ function WageVsCostScatter({ onFilter, filterHaveKids }) {
         const y = yScale(d.Income);
         const isSelected = x >= x0 && x <= x1 && y >= y0 && y <= y1;
         return isSelected ? 0.9 : 0.3;
+      }).attr('r', d => {
+        const x = xScale(d.CostOfLiving);
+        const y = yScale(d.Income);
+        const isSelected = x >= x0 && x <= x1 && y >= y0 && y <= y1;
+        return isSelected ? 5 : 3.5;
       });
 
       if (onFilter) onFilter(selectedIds);
     }
 
   }, [data, onFilter, dimensions]);
+
+  useEffect(() => {
+    if (!data.length || !svgRef.current) return;
+    const svg = d3.select(svgRef.current);
+    const circles = svg.selectAll('circle');
+    if (circles.empty()) return;
+
+    const colorScale = colorScaleRef.current;
+
+    if (filterHaveKids === null) {
+      circles
+        .attr('fill', d => colorScale(d.Cluster))
+        .attr('opacity', 0.6)
+        .attr('r', 4);
+      if (onFilter) onFilter(null);
+      return;
+    }
+
+    const selectedIds = [];
+    circles
+      .attr('fill', d => {
+        const matches = filterHaveKids ? d.haveKids : !d.haveKids;
+        if (matches) selectedIds.push(d.participantId);
+        return matches ? colorScale(d.Cluster) : '#e5e7eb';
+      })
+      .attr('opacity', d => {
+        const matches = filterHaveKids ? d.haveKids : !d.haveKids;
+        return matches ? 0.95 : 0.15;
+      })
+      .attr('r', d => {
+        const matches = filterHaveKids ? d.haveKids : !d.haveKids;
+        return matches ? 5.5 : 3;
+      });
+
+    if (onFilter) onFilter(selectedIds);
+  }, [filterHaveKids, data, onFilter]);
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -177,8 +231,8 @@ function WageVsCostScatter({ onFilter, filterHaveKids }) {
       </div>
       <div
             ref={containerRef}
-            className="w-full"
-            style={{ height: "100%", minHeight: "600px" }}   // ← guarantees enough room
+            className="w-full flex-grow"
+            style={{ height: "100%" }}
           >
         {loading ? (
             <div className="flex items-center justify-center h-full text-gray-400">Loading data...</div>

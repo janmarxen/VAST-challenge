@@ -21,14 +21,17 @@ services:
   frontend:
     build: ./frontend
     container_name: vast-frontend
+    # The frontend image is built and served with nginx (container port 80).
+    # Map host port 8080 -> container port 80 so you can open http://localhost:8080
     ports:
-      - "3000:3000"
+      - "8080:80"
+    # Mount the nginx config so /api requests are proxied to the backend
     volumes:
-      - ./frontend:/app
-      - /app/node_modules  # Use container's node_modules
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    # Do not mount source into the production container (we serve static build files).
     environment:
-      - REACT_APP_API_URL=http://localhost:5000/api
-      - CHOKIDAR_USEPOLLING=true  # Enable hot reload in Docker
+      # Point at the backend service over the Docker network
+      - REACT_APP_API_URL=http://backend:5000/api
     depends_on:
       - backend
     networks:

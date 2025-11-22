@@ -26,17 +26,30 @@ export const fetchPerformanceMetrics = () => {
 };
 
 // Resident API endpoints
-export const fetchWageVsCost = (education, householdSize) => {
+export const fetchWageVsCost = (paramsObj = {}) => {
   const params = new URLSearchParams();
+  // Support both old positional args (if someone uses them) and new object style
+  // But for now, let's assume we migrate to object style or handle the specific case of "month passed as first arg"
+  
+  // If the first argument is a string that looks like a date (YYYY-MM), treat it as month
+  // This is a temporary compatibility hack if we don't want to change all call sites immediately,
+  // but we ARE changing call sites. So let's do it right.
+  
+  const { education, householdSize, haveKids, month } = paramsObj;
+
   if (education) params.append('education', education);
   if (householdSize) params.append('household_size', householdSize);
+  if (haveKids !== undefined && haveKids !== null) params.append('haveKids', haveKids);
+  if (month) params.append('month', month);
   
   return axios.get(`${API_BASE_URL}/resident/wage-vs-cost?${params}`)
     .then(response => response.data);
 };
 
-export const fetchFinancialTrajectories = () => {
-  return axios.get(`${API_BASE_URL}/resident/financial-trajectories`)
+export const fetchFinancialTrajectories = (month) => {
+  const params = new URLSearchParams();
+  if (month) params.append('month', month);
+  return axios.get(`${API_BASE_URL}/resident/financial-trajectories?${params}`)
     .then(response => response.data);
 };
 
@@ -45,8 +58,14 @@ export const fetchResidentClusters = () => {
     .then(response => response.data);
 };
 
-export const fetchParallelCoordinates = () => {
-  return axios.get(`${API_BASE_URL}/resident/parallel-coordinates`)
+export const fetchParallelCoordinates = (paramsObj = {}) => {
+  const params = new URLSearchParams();
+  const { haveKids, month } = paramsObj;
+  
+  if (haveKids !== undefined && haveKids !== null) params.append('haveKids', haveKids);
+  if (month) params.append('month', month);
+
+  return axios.get(`${API_BASE_URL}/resident/parallel-coordinates?${params}`)
     .then(response => response.data);
 };
 
