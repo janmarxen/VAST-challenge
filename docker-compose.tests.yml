@@ -1,0 +1,28 @@
+version: '3.8'
+
+x-backend-test: &backend-test
+  build:
+    context: ./backend
+  working_dir: /app
+  volumes:
+    - ./backend:/app
+    - ./data:/app/data
+  environment:
+    - FLASK_ENV=testing
+    - PYTHONUNBUFFERED=1
+
+services:
+  business-tests:
+    <<: *backend-test
+    container_name: vast-business-tests
+    command: ["pytest", "tests/test_business_router.py"]
+
+  resident-tests:
+    <<: *backend-test
+    container_name: vast-resident-tests
+    command: ["pytest", "tests/test_resident_router.py"]
+
+  employer-tests:
+    <<: *backend-test
+    container_name: vast-employer-tests
+    command: ["pytest", "tests/test_employer_router.py"]

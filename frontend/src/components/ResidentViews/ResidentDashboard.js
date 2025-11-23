@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import WageVsCostScatter from './TabLivingGap/WageVsCostScatter';
 import FinancialTrajectories from './TabFinancialFlow/FinancialTrajectories';
 import ParallelCoordinates from './TabLivingGap/ParallelCoordinates';
@@ -16,10 +16,13 @@ function ResidentDashboard() {
   const [selectedIds, setSelectedIds] = useState(null);
   const [activeTab, setActiveTab] = useState(1);
   const [filterHaveKids, setFilterHaveKids] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState('2022-03');
+  const [selectedMonth, setSelectedMonth] = useState('2022-04');
+  const [showFloatingTimeControl, setShowFloatingTimeControl] = useState(false);
+  const timeControlRef = useRef(null);
 
+  // Exclude the first month (2022-03) from the analysis per backend filtering
   const months = [
-    '2022-03', '2022-04', '2022-05', '2022-06', '2022-07', '2022-08',
+    '2022-04', '2022-05', '2022-06', '2022-07', '2022-08',
     '2022-09', '2022-10', '2022-11', '2022-12', '2023-01', '2023-02',
     '2023-03', '2023-04', '2023-05'
   ];
@@ -61,6 +64,50 @@ function ResidentDashboard() {
     { label: 'Without Children', value: false, description: 'Singles & couples', icon: '🏙️' }
   ];
 
+  useEffect(() => {
+    const target = timeControlRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setShowFloatingTimeControl(!entry.isIntersecting);
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
+
+  const renderTimeSlider = (isCompact = false) => (
+    <>
+      <div className={`flex ${isCompact ? 'flex-col gap-2' : 'justify-between items-center mb-2'}`}>
+        <label className={`font-bold text-gray-700 flex items-center gap-2 ${isCompact ? 'text-sm' : ''}`}>
+          <span>📅 Global Time Period:</span>
+          <span className={`${isCompact ? 'text-base' : 'text-blue-600 text-lg'}`}>{selectedMonth}</span>
+        </label>
+        {!isCompact && (
+          <div className="text-xs text-gray-500">
+            Updates all visualizations below
+          </div>
+        )}
+      </div>
+      <input
+        type="range"
+        min="0"
+        max={months.length - 1}
+        value={months.indexOf(selectedMonth)}
+        onChange={(e) => setSelectedMonth(months[e.target.value])}
+        className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 ${isCompact ? 'mt-0' : ''}`}
+      />
+      <div className={`flex justify-between text-xs text-gray-400 mt-1 font-mono ${isCompact ? 'text-[0.65rem]' : ''}`}>
+        <span>{months[0]}</span>
+        <span>{months[months.length - 1]}</span>
+      </div>
+    </>
+  );
+
   const handleHouseholdFocus = (value) => {
     setFilterHaveKids(prev => (prev === value ? null : value));
   };
@@ -76,7 +123,7 @@ function ResidentDashboard() {
         </p>
         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
           <p className="text-sm text-green-900">
-            <strong>🗺️ Analysis Strategy:</strong> Identify "Red Zones" (high debt) on the map. 
+            <strong>🗺️ Analysis Strategy:</strong> Identify "Red Zones" (low savings) on the map. 
             Are they clustered in specific neighborhoods? Use the slider to see if these clusters expand over time.
             Then, check the <strong>Demographic Disparities</strong> tab to see who lives there.
           </p>
@@ -92,18 +139,33 @@ function ResidentDashboard() {
 
   const renderTab2 = () => (
     <div className="space-y-8">
-      {/* Text Section */}
+      {/* Story intro */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <h3 className="text-xl font-bold text-gray-800 mb-3">Demographic Disparities & The Living Gap</h3>
-        <p className="text-gray-700 leading-relaxed mb-4">
-          Now that you've seen <em>where</em> the issues are, let's look at <em>who</em> is affected.
-          This section analyzes the <strong>Living Gap</strong>—the difference between wages and the cost of living—across different population segments.
+        <p className="text-gray-700 leading-relaxed mb-3">
+          After locating <em>where</em> financial stress appears, this tab explains <em>who</em> is affected.
+          Clusters highlight a few recurring household "lifestyles" and how each group balances income, costs and savings.
         </p>
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-900">
-            <strong>👥 Analysis Strategy:</strong> Use the scatter plot to select residents below the diagonal line (those in debt).
-            Look at the Parallel Coordinates below to see their common traits: Are they mostly low-education? Large families?
-          </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-900 mb-1">How to read this tab</h4>
+            <p>
+              Start with the <strong>Living Gap</strong> scatter: residents below the red line spend more than they earn.
+              Then use the <strong>Demographic Pattern Finder</strong> to see how household size, costs and savings differ across clusters.
+            </p>
+          </div>
+          <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+            <h4 className="font-semibold text-emerald-900 mb-1">Key discriminator: household structure</h4>
+            <p>
+              The strongest split is <strong>with vs. without children</strong>. Single adults and couples without kids keep costs lean and tend to save more, while larger families face higher fixed expenses and tighter margins.
+            </p>
+          </div>
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+            <h4 className="font-semibold text-slate-900 mb-1">What age tells us</h4>
+            <p>
+              Age barely separates the clusters. Younger and older residents appear in every group; what really matters is how many people share a household and how far income rises above basic costs.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -144,15 +206,39 @@ function ResidentDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col" style={{ height: '700px' }}>
-          <ParallelCoordinates selectedIds={selectedIds} selectedMonth={selectedMonth} />
-        </div>
-        <div className="lg:col-span-1 flex flex-col gap-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-            <SavingsRateByEducation selectedMonth={selectedMonth} />
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col min-h-[780px]">
+          <div className="mb-3 text-sm text-gray-700">
+            <p className="mb-1"><strong>Cluster personas:</strong></p>
+            <ul className="list-disc ml-5 space-y-1">
+              <li><strong className="text-red-600">Affluent Achievers (red)</strong>: couples and families with very high incomes who keep costs in check, appearing as high-income, high-savings outliers.</li>
+              <li><strong className="text-sky-700">Stretched Households (blue)</strong>: lower-income residents with average living costs, leaving little room to save and clustering near the low-savings region.</li>
+              <li><strong className="text-orange-600">Lean Savers (orange)</strong>: mostly single adults without children, with average incomes but very low costs, achieving medium to high savings rates.</li>
+            </ul>
           </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-            <HouseholdSizeStats selectedMonth={selectedMonth} />
+          <div className="flex-1 min-h-[620px]">
+            <ParallelCoordinates
+              selectedIds={selectedIds}
+              selectedMonth={selectedMonth}
+              filterHaveKids={filterHaveKids}
+            />
+          </div>
+        </div>
+        <div className="lg:col-span-1 flex flex-col gap-6 lg:h-[760px]">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1">
+              <SavingsRateByEducation selectedMonth={selectedMonth} />
+            </div>
+            <p className="mt-3 text-xs text-gray-600">
+              Education nudges savings but does not fully explain the clusters: each education band still contains both savers and stretched households.
+            </p>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col flex-1 overflow-hidden">
+            <div className="flex-1">
+              <HouseholdSizeStats selectedMonth={selectedMonth} />
+            </div>
+            <p className="mt-3 text-xs text-gray-600">
+              Notice how <strong>1-person households</strong> dominate the higher savings bars, while larger households with children push toward lower savings despite similar or higher incomes.
+            </p>
           </div>
         </div>
       </div>
@@ -165,13 +251,11 @@ function ResidentDashboard() {
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <h3 className="text-xl font-bold text-gray-800 mb-3">Expense Analysis & Health Impacts</h3>
         <p className="text-gray-700 leading-relaxed mb-4">
-          Examine how financial decisions impact daily life. 
-          This section analyzes spending patterns over time and correlates them with physical well-being indicators like hunger.
+          Follow how money flows through residents' budgets and how close they run to the edge. The stacked chart tracks average wages and monthly expenses, the city-wide bars summarize where the money goes in the selected month, and the scatter at the bottom reveals which clusters manage to save versus those living under persistent financial stress.
         </p>
         <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
           <p className="text-sm text-amber-900">
-            <strong>📉 Analysis Strategy:</strong> Look for widening gaps between the Income line and the Expense stack.
-            Check if low food spending correlates with higher hunger rates in the scatter plot below.
+            <strong>📉 Analysis Strategy:</strong> First, scan for periods where the dashed wage line drifts toward the top of the colored expense bands—those months signal shrinking room to save. Next, use the city-wide bars to see which categories (shelter, food, recreation, education) are driving costs. Finally, read the <em>Savings vs. Financial Stress</em> scatter to see how often residents dip into negative savings and which clusters consistently sit in the high-stress zone.
           </p>
         </div>
       </div>
@@ -180,37 +264,27 @@ function ResidentDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col" style={{ height: '800px' }}>
           <FinancialTrajectories selectedMonth={selectedMonth} />
+          <div className="mt-4 text-sm text-gray-700">
+            <h4 className="font-semibold text-gray-800 mb-2">Who is under financial pressure?</h4>
+            <p>
+              Each dot in the resident scatter represents a person in the chosen month. People in the lower‑right corner save a healthy share of income with low Financial Stress; those pulled up and left are repeatedly spending more than they earn or facing high expenses relative to income. Cluster colors reveal which lifestyles stay resilient as costs change.
+            </p>
+          </div>
         </div>
         <div className="lg:col-span-1 flex flex-col gap-6">
-           <CityWideExpenses selectedMonth={selectedMonth} />
+           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full">
+             <h4 className="text-sm font-semibold text-gray-800 mb-2">City-wide snapshot for the selected month</h4>
+             <p className="text-xs text-gray-600 mb-3">
+               These bars compress the entire city's budget into a single month: shelter dominates fixed costs, while food and recreation absorb most discretionary spending. The total income figure below shows how much room there is before households start cutting back.
+             </p>
+             <CityWideExpenses selectedMonth={selectedMonth} />
+           </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full">
             <FoodHungerScatter selectedMonth={selectedMonth} />
+          </div>
         </div>
       </div>
       
-      {/* Additional insights */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h4 className="text-lg font-semibold text-gray-800 mb-3">Interpretation Guide</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
-          <div>
-            <h5 className="font-semibold text-gray-800 mb-2">Reading the Chart</h5>
-            <ul className="space-y-1 list-disc ml-4">
-              <li><strong>Stacked areas</strong> represent cumulative expenses by category</li>
-              <li><strong>Dashed line</strong> shows average wage income</li>
-              <li>When the line is <strong>above</strong> the stack, residents are saving</li>
-              <li>When the line is <strong>below</strong>, they're going into debt</li>
-            </ul>
-          </div>
-          <div>
-            <h5 className="font-semibold text-gray-800 mb-2">🔍 What to Look For</h5>
-            <ul className="space-y-1 list-disc ml-4">
-              <li>Seasonal patterns in specific expense categories</li>
-              <li>Periods of growing wage-expense gap</li>
-              <li>Which expense categories dominate</li>
-              <li>Stability vs. volatility in income streams</li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </div>
   );
 
@@ -227,29 +301,18 @@ function ResidentDashboard() {
         </header>
 
         {/* Global Time Control */}
-        <div className="mb-8 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex justify-between items-center mb-2">
-            <label className="font-bold text-gray-700 flex items-center gap-2">
-              <span>📅 Global Time Period:</span>
-              <span className="text-blue-600 text-lg">{selectedMonth}</span>
-            </label>
-            <div className="text-xs text-gray-500">
-              Updates all visualizations below
+        <div ref={timeControlRef} className="mb-8 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          {renderTimeSlider(false)}
+        </div>
+
+        {showFloatingTimeControl && (
+          <div className="fixed bottom-4 left-1/2 -translate-x-1/2 px-4 z-50 w-full sm:w-auto sm:left-auto sm:right-6 sm:translate-x-0">
+            <div className="bg-white/95 backdrop-blur border border-gray-200 rounded-2xl shadow-2xl p-4 sm:w-80">
+              <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Quick adjust</div>
+              {renderTimeSlider(true)}
             </div>
           </div>
-          <input
-            type="range"
-            min="0"
-            max={months.length - 1}
-            value={months.indexOf(selectedMonth)}
-            onChange={(e) => setSelectedMonth(months[e.target.value])}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-          />
-          <div className="flex justify-between text-xs text-gray-400 mt-1 font-mono">
-            <span>{months[0]}</span>
-            <span>{months[months.length - 1]}</span>
-          </div>
-        </div>
+        )}
 
         {/* Tab Navigation */}
         <div className="mb-8">

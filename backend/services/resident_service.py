@@ -6,9 +6,113 @@ import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
 import os
+import pickle
+from pathlib import Path
 
 # Global cache for data
 _DATA_CACHE = {}
+
+def _resolve_data_dirs():
+    repo_root = Path(__file__).resolve().parents[2]
+    if Path('/app/data').exists():
+        data_root = Path('/app/data')
+    else:
+        data_root = repo_root / 'data'
+    raw_dir = data_root / 'raw'
+    processed_dir = data_root / 'processed'
+    processed_dir.mkdir(parents=True, exist_ok=True)
+    return raw_dir, processed_dir
+
+RAW_DATA_DIR, PROCESSED_DATA_DIR = _resolve_data_dirs()
+
+def _latest_raw_mtime(raw_dir: Path) -> float:
+    csv_files = list(raw_dir.glob('*.csv'))
+    if not csv_files:
+        return 0
+    return max(f.stat().st_mtime for f in csv_files)
+
+def _load_disk_cache(processed_dir: Path, raw_mtime: float):
+    cache_path = processed_dir / 'resident_data_cache.pkl'
+    if not cache_path.exists():
+        return None
+    try:
+        with cache_path.open('rb') as f:
+            payload = pickle.load(f)
+    except Exception as exc:
+        print(f"Failed to load resident cache: {exc}")
+        return None
+    if payload.get('raw_mtime', 0) < raw_mtime:
+        return None
+    return payload.get('frames')
+
+def _persist_disk_cache(frames: dict, processed_dir: Path, raw_mtime: float):
+    cache_path = processed_dir / 'resident_data_cache.pkl'
+    try:
+        with cache_path.open('wb') as f:
+            pickle.dump({'raw_mtime': raw_mtime, 'frames': frames}, f)
+    except Exception as exc:
+        print(f"Failed to persist resident cache: {exc}")
+
+
+def _sample_dataframe(df, max_rows=1200, random_state=42):
+    if df is None:
+        return None
+    if len(df) <= max_rows:
+        return df
+    return df.sample(n=max_rows, random_state=random_state)
+
+
+def _load_status_metrics(max_rows=400000):
+    raw_latest_mtime = _latest_raw_mtime(RAW_DATA_DIR)
+    cache_path = PROCESSED_DATA_DIR / 'status_metrics_cache.pkl'
+
+    if 'status_metrics' in _DATA_CACHE:
+        return _DATA_CACHE['status_metrics']
+
+    if cache_path.exists():
+        try:
+            with cache_path.open('rb') as f:
+                payload = pickle.load(f)
+            if payload.get('raw_mtime', 0) >= raw_latest_mtime:
+                _DATA_CACHE['status_metrics'] = payload.get('data')
+                if _DATA_CACHE['status_metrics'] is not None:
+                    return _DATA_CACHE['status_metrics']
+        except Exception as exc:
+            print(f"Failed to load status metrics cache: {exc}")
+
+    status_log_path = RAW_DATA_DIR / 'ParticipantStatusLogs1.csv'
+    print(f"Loading status logs from: {status_log_path}")
+    usecols = ['participantId', 'hungerStatus', 'financialStatus', 'dailyFoodBudget']
+    status_logs = pd.read_csv(status_log_path, usecols=usecols)
+
+    if len(status_logs) > max_rows:
+        status_logs = status_logs.sample(n=max_rows, random_state=42)
+
+    status_logs['is_hungry'] = status_logs['hungerStatus'].isin(['Hungry', 'Starving']).astype(int)
+
+    # NOTE: We no longer compute per-row 'is_unstable' or expose an InstabilityRate.
+    # Downstream analyses should use composite metrics (FinancialStress) computed from
+    # financial history and negative-savings behavior instead of a single coarse
+    # probability derived from the status logs.
+
+    status_metrics = status_logs.groupby('participantId').agg({
+        'is_hungry': 'mean',
+        'dailyFoodBudget': 'mean'
+    }).reset_index()
+
+    status_metrics.rename(columns={
+        'is_hungry': 'HungerRate',
+        'dailyFoodBudget': 'AvgFoodBudget'
+    }, inplace=True)
+
+    _DATA_CACHE['status_metrics'] = status_metrics
+    try:
+        with cache_path.open('wb') as f:
+            pickle.dump({'raw_mtime': raw_latest_mtime, 'data': status_metrics}, f)
+    except Exception as exc:
+        print(f"Failed to persist status metrics cache: {exc}")
+
+    return status_metrics
 
 def _get_data():
     """
@@ -19,18 +123,14 @@ def _get_data():
     """
     if 'merged' in _DATA_CACHE:
         return _DATA_CACHE['merged'], _DATA_CACHE['financial'], _DATA_CACHE['monthly_financial']
-    
-    # Define paths relative to this file
-    # In Docker, the app is in /app, so data is in /app/data/raw
-    # But locally it might be different. We use a robust way.
-    
-    # Check if we are in docker (simple check)
-    if os.path.exists('/app/data/raw'):
-        base_path = '/app/data/raw'
-    else:
-        # Local development fallback
-        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data/raw'))
-    
+
+    raw_latest_mtime = _latest_raw_mtime(RAW_DATA_DIR)
+    disk_frames = _load_disk_cache(PROCESSED_DATA_DIR, raw_latest_mtime)
+    if disk_frames:
+        _DATA_CACHE.update(disk_frames)
+        return _DATA_CACHE['merged'], _DATA_CACHE['financial'], _DATA_CACHE['monthly_financial']
+
+    base_path = str(RAW_DATA_DIR)
     print(f"Loading data from: {base_path}")
     
     # Load Participants
@@ -47,7 +147,7 @@ def _get_data():
     monthly_financial = financial.groupby(['participantId', 'month', 'category'])['amount'].sum().unstack(fill_value=0).reset_index()
     
     # Ensure columns exist
-    expected_cols = ['Wage', 'Shelter', 'Food', 'Recreation', 'Education', 'RentAdjustment']
+    expected_cols = ['Wage', 'Shelter', 'Food', 'Recreation', 'Education']
     for col in expected_cols:
         if col not in monthly_financial.columns:
             monthly_financial[col] = 0
@@ -56,11 +156,22 @@ def _get_data():
     # Expenses are negative in the CSV, Wage is positive.
     monthly_financial['Income'] = monthly_financial['Wage']
     # Cost of Living is the sum of expenses (negated to be positive for comparison)
-    monthly_financial['CostOfLiving'] = -(monthly_financial['Shelter'] + monthly_financial['Food'] + monthly_financial['Recreation'] + monthly_financial['Education'] + monthly_financial['RentAdjustment'])
+    monthly_financial['CostOfLiving'] = -(monthly_financial['Shelter'] + monthly_financial['Food'] + monthly_financial['Recreation'] + monthly_financial['Education'])
     # SavingsRate per month for downstream filtering
     monthly_financial['SavingsRate'] = np.where(monthly_financial['Income'] > 0,
                                                (monthly_financial['Income'] - monthly_financial['CostOfLiving']) / monthly_financial['Income'],
                                                0)
+
+    # Exclude the first month from analysis (drop earliest month across the dataset)
+    try:
+        first_month = monthly_financial['month'].min()
+        if pd.notnull(first_month):
+            # Filter out rows that belong to the earliest month
+            monthly_financial = monthly_financial[monthly_financial['month'] != first_month].reset_index(drop=True)
+            print(f"Excluding first month from analysis: {first_month}")
+    except Exception:
+        # In case 'month' isn't comparable or missing, skip silently
+        pass
     
     # Aggregate to Participant Level (Average Monthly)
     participant_financial = monthly_financial.groupby('participantId').agg({
@@ -82,14 +193,19 @@ def _get_data():
     merged['SavingsRate'] = np.where(merged['Income'] > 0, merged['Savings'] / merged['Income'], 0)
     
     # Perform Clustering
-    # Features for clustering: Age, HouseholdSize, Income, CostOfLiving
-    features = merged[['age', 'householdSize', 'Income', 'CostOfLiving']].copy()
+    # Features for clustering: Age, HouseholdSize, Income, CostOfLiving, Education, SavingsRate
+    features = merged[['age', 'householdSize', 'Income', 'CostOfLiving', 'Education', 'SavingsRate']].copy()
+    # Optionally add more: Food, Recreation
+    if 'Food' in merged.columns:
+        features['Food'] = merged['Food']
+    if 'Recreation' in merged.columns:
+        features['Recreation'] = merged['Recreation']
     # Simple normalization
     features = (features - features.mean()) / features.std()
     # Fill NaNs if any
     features = features.fillna(0)
     
-    kmeans = KMeans(n_clusters=4, random_state=42)
+    kmeans = KMeans(n_clusters=3, random_state=42)
     merged['Cluster'] = kmeans.fit_predict(features)
     
     # Load Buildings for Geometry
@@ -105,12 +221,17 @@ def _get_data():
     # Assuming residence is relatively stable or we take the first known location
     residence_map = status_log[['participantId', 'apartmentId']].drop_duplicates(subset=['participantId'])
     
-    _DATA_CACHE['merged'] = merged
-    _DATA_CACHE['financial'] = financial
-    _DATA_CACHE['monthly_financial'] = monthly_financial
-    _DATA_CACHE['buildings'] = buildings
-    _DATA_CACHE['apartments'] = apartments
-    _DATA_CACHE['residence_map'] = residence_map
+    frames_to_cache = {
+        'merged': merged,
+        'financial': financial,
+        'monthly_financial': monthly_financial,
+        'buildings': buildings,
+        'apartments': apartments,
+        'residence_map': residence_map
+    }
+
+    _DATA_CACHE.update(frames_to_cache)
+    _persist_disk_cache(frames_to_cache, PROCESSED_DATA_DIR, raw_latest_mtime)
     
     return merged, financial, monthly_financial
 
@@ -169,7 +290,7 @@ def get_financial_trajectories():
         
         # Melt the dataframe to get 'category' and 'amount' columns back for grouping
         # monthly_financial has columns: participantId, month, Wage, Shelter, Food, etc.
-        value_vars = ['Wage', 'Shelter', 'Food', 'Recreation', 'Education', 'RentAdjustment']
+        value_vars = ['Wage', 'Shelter', 'Food', 'Recreation', 'Education']
         melted = pd.melt(merged_ts, id_vars=['participantId', 'month', 'educationLevel', 'Cluster'], 
                          value_vars=value_vars, var_name='category', value_name='amount')
         
@@ -231,7 +352,7 @@ def get_parallel_coordinates_data(have_kids=None, month=None):
             df = df[df['haveKids'] == have_kids]
         
         # Select relevant columns
-        cols = ['participantId', 'educationLevel', 'age', 'householdSize', 'Income', 'CostOfLiving', 'SavingsRate', 'Cluster']
+        cols = ['participantId', 'educationLevel', 'age', 'householdSize', 'Income', 'CostOfLiving', 'SavingsRate', 'Cluster', 'haveKids']
         # If month is in df, we might want to keep it or just ensure it doesn't break things if we selected it.
         # But cols doesn't include 'month', so it should be fine unless we add it.
         # However, let's be safe and convert it if we ever decide to include it or if it leaks in.
@@ -264,13 +385,13 @@ def get_geographic_financial_health():
         monthly_financial = financial_df.groupby(['participantId', 'month', 'category'])['amount'].sum().unstack(fill_value=0).reset_index()
         
         # Ensure columns
-        expected_cols = ['Wage', 'Shelter', 'Food', 'Recreation', 'Education', 'RentAdjustment']
+        expected_cols = ['Wage', 'Shelter', 'Food', 'Recreation', 'Education']
         for col in expected_cols:
             if col not in monthly_financial.columns:
                 monthly_financial[col] = 0
                 
         monthly_financial['Income'] = monthly_financial['Wage']
-        monthly_financial['CostOfLiving'] = -(monthly_financial['Shelter'] + monthly_financial['Food'] + monthly_financial['Recreation'] + monthly_financial['Education'] + monthly_financial['RentAdjustment'])
+        monthly_financial['CostOfLiving'] = -(monthly_financial['Shelter'] + monthly_financial['Food'] + monthly_financial['Recreation'] + monthly_financial['Education'])
         monthly_financial['SavingsRate'] = np.where(monthly_financial['Income'] > 0, (monthly_financial['Income'] - monthly_financial['CostOfLiving']) / monthly_financial['Income'], 0)
         
         # 2. Link Participant -> Apartment -> Building
@@ -351,36 +472,7 @@ def get_expense_analysis_data(month=None):
     try:
         merged_df, _, monthly_financial = _get_data()
         
-        # Load Status Logs (Sample)
-        # We use Logs1 as a representative sample. 
-        # In a real scenario, we might want to process more, but for speed we stick to one or a few.
-        
-        # Robust path finding similar to _get_data
-        if os.path.exists('/app/data/raw'):
-            base_path = '/app/data/raw'
-        else:
-            base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data/raw'))
-
-        status_log_path = os.path.join(base_path, 'ParticipantStatusLogs1.csv')
-        print(f"Loading status logs from: {status_log_path}")
-        status_logs = pd.read_csv(status_log_path)
-        
-        # Aggregate Status Metrics per Participant
-        # 1. Hunger Rate: % of logs where status is 'Hungry' or 'Starving'
-        status_logs['is_hungry'] = status_logs['hungerStatus'].isin(['Hungry', 'Starving']).astype(int)
-        status_logs['is_unstable'] = (status_logs['financialStatus'] == 'Unstable').astype(int)
-        
-        status_metrics = status_logs.groupby('participantId').agg({
-            'is_hungry': 'mean',
-            'is_unstable': 'mean',
-            'dailyFoodBudget': 'mean'
-        }).reset_index()
-        
-        status_metrics.rename(columns={
-            'is_hungry': 'HungerRate', 
-            'is_unstable': 'InstabilityRate',
-            'dailyFoodBudget': 'AvgFoodBudget'
-        }, inplace=True)
+        status_metrics = _load_status_metrics()
         
         # Merge with Financial Data
         # If month is provided, use that month's financial data
@@ -400,13 +492,63 @@ def get_expense_analysis_data(month=None):
             financial_data = pd.merge(financial_data, static_attrs, on='participantId')
         
         analysis_df = pd.merge(financial_data, status_metrics, on='participantId', how='inner')
-        
-        # Prepare response
-        # We want to send data for scatter plots
+
+        # Build a composite FinancialStress metric to increase dynamic range for visualization.
+        # Components:
+        #  - NegativeSavingsFraction: fraction of months where SavingsRate < 0 (0..1)
+        #  - AvgExpenseIncomeRatioScaled: mean(CostOfLiving / Income) across months, scaled to 0..1 via r/(r+1)
+        try:
+            pm = monthly_financial[['participantId', 'SavingsRate', 'Income', 'CostOfLiving']].copy()
+            pm['NegativeSavings'] = (pm['SavingsRate'] < 0).astype(int)
+            neg_frac = pm.groupby('participantId')['NegativeSavings'].mean().reset_index().rename(columns={'NegativeSavings': 'NegativeSavingsFraction'})
+
+            pm['ExpenseIncomeRatio'] = np.where(pm['Income'] > 0, pm['CostOfLiving'] / pm['Income'], np.nan)
+            avg_ratio = pm.groupby('participantId')['ExpenseIncomeRatio'].mean().reset_index().rename(columns={'ExpenseIncomeRatio': 'AvgExpenseIncomeRatio'})
+
+            # Merge the per-participant metrics into analysis_df
+            analysis_df = pd.merge(analysis_df, neg_frac, on='participantId', how='left')
+            analysis_df = pd.merge(analysis_df, avg_ratio, on='participantId', how='left')
+
+            # Scale the expense/income ratio into 0..1 range
+            analysis_df['AvgExpenseIncomeRatioScaled'] = analysis_df['AvgExpenseIncomeRatio'] / (analysis_df['AvgExpenseIncomeRatio'] + 1)
+            # For participants where ratio is NaN (e.g., zero income across months), treat as high-stress
+            analysis_df['AvgExpenseIncomeRatioScaled'].fillna(1.0, inplace=True)
+
+            # Fill missing NegativeSavingsFraction with 0 (conservative)
+            analysis_df['NegativeSavingsFraction'].fillna(0.0, inplace=True)
+
+            # Compose the FinancialStress metric (weights chosen to emphasize negative savings)
+            analysis_df['FinancialStress'] = (
+                0.6 * analysis_df['NegativeSavingsFraction']
+                + 0.4 * analysis_df['AvgExpenseIncomeRatioScaled']
+            )
+        except Exception:
+            # If anything goes wrong computing the composite metric, fall back to NegativeSavingsFraction if present
+            if 'NegativeSavingsFraction' in analysis_df.columns:
+                analysis_df['FinancialStress'] = analysis_df['NegativeSavingsFraction'].fillna(0)
+            else:
+                analysis_df['FinancialStress'] = 0
+
+        # Reduce payload sizes for expensive visualizations
+        food_vs_hunger_df = analysis_df[['participantId', 'Food', 'HungerRate', 'Cluster', 'educationLevel']].copy()
+        food_vs_hunger_df.replace([np.inf, -np.inf], np.nan, inplace=True)
+        food_vs_hunger_df.dropna(subset=['Food', 'HungerRate'], inplace=True)
+        food_vs_hunger_df['Food'] = food_vs_hunger_df['Food'].abs()
+        food_vs_hunger_df = _sample_dataframe(food_vs_hunger_df, max_rows=1500)
+
+        # Include FinancialStress in the returned stability dataframe so frontend can use it if desired
+        financial_vs_stability_df = analysis_df[['participantId', 'SavingsRate', 'FinancialStress', 'Cluster', 'Income']].copy()
+        financial_vs_stability_df.replace([np.inf, -np.inf], np.nan, inplace=True)
+        financial_vs_stability_df.dropna(subset=['SavingsRate'], inplace=True)
+        financial_vs_stability_df = _sample_dataframe(financial_vs_stability_df, max_rows=1500)
         
         return {
-            'food_vs_hunger': analysis_df[['participantId', 'Food', 'HungerRate', 'Cluster', 'educationLevel']].to_dict(orient='records'),
-            'financial_vs_stability': analysis_df[['participantId', 'SavingsRate', 'InstabilityRate', 'Cluster', 'Income']].to_dict(orient='records')
+            'food_vs_hunger': food_vs_hunger_df.to_dict(orient='records'),
+            'financial_vs_stability': financial_vs_stability_df.to_dict(orient='records'),
+            'sampled_counts': {
+                'food_vs_hunger': len(food_vs_hunger_df),
+                'financial_vs_stability': len(financial_vs_stability_df)
+            }
         }
         
     except Exception as e:

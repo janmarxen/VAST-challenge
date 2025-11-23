@@ -126,6 +126,9 @@ git commit -m "Implement revenue time series visualization"
 # Run tests before pushing
 cd backend
 pytest tests/test_business_router.py
+# or use docker compose
+docker compose -f docker-compose.tests.yml up --build --abort-on-container-exit
+docker compose -f docker-compose.tests.yml down --remove-orphans
 
 # If tests pass, push to main
 git checkout main

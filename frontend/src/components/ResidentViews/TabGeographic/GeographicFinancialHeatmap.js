@@ -10,6 +10,7 @@ const GeographicFinancialHeatmap = ({ selectedMonth }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState(null);
+  const [hoverStats, setHoverStats] = useState(null);
 
   // Fetch data
   useEffect(() => {
@@ -146,10 +147,19 @@ const GeographicFinancialHeatmap = ({ selectedMonth }) => {
             pop: stat ? stat.population : 0
           }
         });
+
+        // Stats for the right-hand panel
+        setHoverStats({
+          id: d.properties.buildingId,
+          type: d.properties.buildingType,
+          savingsRate: stat ? stat.SavingsRate : null,
+          population: stat ? stat.population : null
+        });
         d3.select(event.target).attr('stroke', '#333').attr('stroke-width', 2);
       })
       .on('mouseout', (event) => {
         setTooltip(null);
+        setHoverStats(null);
         d3.select(event.target).attr('stroke', '#ccc').attr('stroke-width', 0.5);
       });
 
@@ -187,40 +197,69 @@ const GeographicFinancialHeatmap = ({ selectedMonth }) => {
   const eduStats = data.education_stats ? data.education_stats.filter(s => s.month === selectedMonth) : null;
 
   return (
-    <div className="flex flex-col items-center w-full">
-      <div ref={containerRef} className="relative border rounded-xl shadow-lg bg-white p-4 mb-8">
-        <svg ref={svgRef} width={containerWidth} height={containerHeight} className="bg-blue-50/30"></svg>
-        
-        {/* Tooltip */}
-        {tooltip && (
-          <div
-            className="absolute z-10 bg-white p-3 rounded shadow-xl border border-gray-200 text-sm pointer-events-none"
-            style={{ left: tooltip.x - 100, top: tooltip.y - 100 }} // Offset to not block cursor
-          >
-            <div className="font-bold text-gray-800">Building #{tooltip.content.id}</div>
-            <div className="text-gray-600">{tooltip.content.type}</div>
-            <div className="mt-2">
-              <span className="font-semibold">Savings Rate: </span>
-              <span className={parseFloat(tooltip.content.savings) < 0 ? 'text-red-600' : 'text-green-600'}>
-                {tooltip.content.savings}
-              </span>
-            </div>
-            <div>Population: {tooltip.content.pop}</div>
-          </div>
-        )}
+    <div className="flex flex-row w-full gap-8 items-start">
+      {/* Map container */}
+      <div className="flex-1 flex justify-center">
+        <div ref={containerRef} className="relative border rounded-xl shadow-lg bg-white p-4 mb-8 w-full max-w-5xl">
+          <svg ref={svgRef} width={containerWidth} height={containerHeight} className="bg-blue-50/30"></svg>
 
-        {/* Legend Overlay */}
-        <div className="absolute bottom-6 right-6 bg-white/90 p-3 rounded-lg shadow-md text-xs">
-          <div className="font-bold mb-2">Avg Savings Rate</div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-500"></div> <span>0% (Break-even)</span>
+          {/* Optional small tooltip near cursor (can be removed if unwanted) */}
+          {tooltip && (
+            <div
+              className="absolute z-10 bg-white p-3 rounded shadow-xl border border-gray-200 text-xs pointer-events-none"
+              style={{ left: tooltip.x - 150, top: tooltip.y - 150 }}
+            >
+              <div className="font-semibold text-gray-800">Building #{tooltip.content.id}</div>
+              <div className="text-gray-600">{tooltip.content.type}</div>
+              <div className="mt-1">Population: {tooltip.content.pop}</div>
+            </div>
+          )}
+
+          {/* Legend Overlay */}
+          <div className="absolute bottom-6 right-6 bg-white/90 p-3 rounded-lg shadow-md text-xs">
+            <div className="font-bold mb-2">Avg Savings Rate</div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-red-500"></div> <span>0% (Break-even)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-yellow-100"></div> <span>50% (Healthy)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-green-500"></div> <span>100% (High Savings)</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-100"></div> <span>50% (Healthy)</span>
+        </div>
+      </div>
+
+      {/* Right-hand commentary & big number */}
+      <div className="w-80 flex flex-col mt-4 pr-4">
+        <div className="mb-4">
+          <div className="text-xs uppercase tracking-wide text-gray-500">Current Selection</div>
+          <div className="text-5xl font-extrabold text-gray-900 leading-tight">
+            {hoverStats && hoverStats.savingsRate != null
+              ? `${(hoverStats.savingsRate * 100).toFixed(1)}%`
+              : cityStats && cityStats.avgSavingsRate != null
+              ? `${(cityStats.avgSavingsRate * 100).toFixed(1)}%`
+              : '--'}
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-500"></div> <span>100% (High Savings)</span>
+          <div className="mt-1 text-sm text-gray-500">
+            {hoverStats
+              ? `Building #${hoverStats.id} · ${hoverStats.type || 'Unknown type'}`
+              : 'Hover over any building to explore its savings rate.'}
           </div>
+        </div>
+
+        <div className="text-sm text-gray-700 leading-relaxed">
+          The geographic financial health map reveals clear spatial disparities in
+          savings behavior across Engagement, OH. Each building segment is colored by
+          its average savings rate, where deep reds indicate households operating at or
+          near break-even, yellows reflect moderate financial security, and greens
+          highlight areas with strong savings cushions.
+          <br />
+          <br />
+          As you move across the map, look for small red pockets next to healthier
+          zones. These local clusters of financial stress may signal neighborhoods
+          where targeted support or policy interventions could have an impact.
         </div>
       </div>
     </div>

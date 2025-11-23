@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { fetchWageVsCost } from '../../../utils/api';
+import { CLUSTER_COLOR_RANGE, getSortedClusterDomain } from '../colorHelpers';
 
 /**
  * Wage vs Cost of Living Scatter Plot
@@ -12,7 +13,7 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const colorScaleRef = useRef(d3.scaleOrdinal(d3.schemeTableau10));
+  const colorScaleRef = useRef(d3.scaleOrdinal(CLUSTER_COLOR_RANGE));
 
   // Handle resize
   useEffect(() => {
@@ -48,8 +49,8 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth }) {
 
   useEffect(() => {
     if (!data.length) return;
-    const uniqueClusters = Array.from(new Set(data.map(d => d.Cluster)));
-    colorScaleRef.current.domain(uniqueClusters);
+    const domain = getSortedClusterDomain(data.map(d => d.Cluster));
+    colorScaleRef.current.domain(domain);
   }, [data]);
 
   useEffect(() => {
@@ -218,7 +219,7 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth }) {
         return matches ? 5.5 : 3;
       });
 
-    if (onFilter) onFilter(selectedIds);
+    if (onFilter) onFilter(filterHaveKids === null ? selectedIds : null);
   }, [filterHaveKids, data, onFilter]);
 
   return (

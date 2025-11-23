@@ -78,6 +78,28 @@ def test_geographic_financial_health_endpoint(client):
         assert 'location' in data['buildings'][0]
         assert 'buildingId' in data['buildings'][0]
 
+def test_expense_analysis_endpoint(client):
+    """Test GET /api/resident/expense-analysis"""
+    response = client.get('/api/resident/expense-analysis')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert 'food_vs_hunger' in data
+    assert 'financial_vs_stability' in data
+    assert 'sampled_counts' in data
+    assert isinstance(data['food_vs_hunger'], list)
+    assert isinstance(data['financial_vs_stability'], list)
+    assert isinstance(data['sampled_counts'], dict)
+
+def test_expense_analysis_with_month_filter(client):
+    """Test GET /api/resident/expense-analysis with month filter"""
+    response = client.get('/api/resident/expense-analysis?month=2022-04')
+    assert response.status_code == 200
+    data = response.get_json()
+    # Ensure the same payload keys are present when month is provided
+    assert 'food_vs_hunger' in data and isinstance(data['food_vs_hunger'], list)
+    assert 'financial_vs_stability' in data and isinstance(data['financial_vs_stability'], list)
+    assert 'sampled_counts' in data and isinstance(data['sampled_counts'], dict)
+
 # TODO: Add more comprehensive tests as data processing is implemented
 # - Test clustering algorithm outputs
 # - Test demographic filtering logic

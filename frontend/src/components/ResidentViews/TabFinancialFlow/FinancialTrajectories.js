@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { fetchFinancialTrajectories } from '../../../utils/api';
+import { EXPENSE_KEYS, EXPENSE_COLOR_MAP } from '../expenditureColors';
 
 /**
  * Financial Health Trajectories
@@ -60,8 +61,7 @@ function FinancialTrajectories({ filterCluster, selectedMonth }) {
     const processedData = dataset.map(d => {
         const obj = { ...d, month: new Date(d.month) };
         // Ensure all keys exist and are positive for stacking
-        const expenseKeys = ['Shelter', 'Food', 'Recreation', 'Education', 'RentAdjustment'];
-        expenseKeys.forEach(k => {
+      EXPENSE_KEYS.forEach(k => {
             obj[k] = Math.abs(d[k] || 0);
         });
         obj.Wage = d.Wage || 0;
@@ -79,7 +79,7 @@ function FinancialTrajectories({ filterCluster, selectedMonth }) {
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
     // Keys
-    const expenseKeys = ['Shelter', 'Food', 'Recreation', 'Education', 'RentAdjustment'];
+    const expenseKeys = EXPENSE_KEYS;
     
     // Make expenses positive for plotting
     processedData.forEach(d => {
@@ -102,16 +102,7 @@ function FinancialTrajectories({ filterCluster, selectedMonth }) {
 
     const yScale = d3.scaleLinear().domain([0, maxY * 1.1]).range([height, 0]);
     
-    // Consistent Color Scheme
-    const categoryColors = {
-        'Shelter': '#4e79a7',       // Blue
-        'Food': '#f28e2b',          // Orange
-        'Recreation': '#e15759',    // Red
-        'Education': '#76b7b2',     // Teal
-        'RentAdjustment': '#59a14f' // Green
-    };
-    
-    const colorScale = (key) => categoryColors[key] || '#ccc';
+    const colorScale = (key) => EXPENSE_COLOR_MAP[key] || '#ccc';
 
     // Area generator
     const area = d3.area()

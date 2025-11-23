@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
 const HouseholdSizeStats = ({ selectedMonth }) => {
+    // Clamp savings rate to [0, 1] for scale
+    const clampRate = rate => Math.max(0, Math.min(1, rate));
   const [geoData, setGeoData] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,9 +63,9 @@ const HouseholdSizeStats = ({ selectedMonth }) => {
       <h3 className="font-bold text-lg mb-4 text-gray-800">Savings Rate by Household Size</h3>
       <div className="space-y-5">
         {sortedStats.map(stat => {
-          const rate = (stat.SavingsRate ?? 0) * 100;
-          const barWidth = Math.min(Math.abs(rate), 50);
-          const leftPos = rate < 0 ? 50 - barWidth : 50;
+          const rate = clampRate(stat.SavingsRate ?? 0) * 100;
+          const barWidth = rate;
+          const leftPos = 0;
           const color = rate < 0 ? 'bg-red-500' : 'bg-green-500';
 
           return (
@@ -73,7 +75,7 @@ const HouseholdSizeStats = ({ selectedMonth }) => {
                 <span className={rate < 0 ? 'text-red-600' : 'text-green-600'}>{rate.toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-3 relative overflow-hidden">
-                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gray-400 z-10"></div>
+                <div className="absolute left-0 top-0 bottom-0 w-px bg-gray-400 z-10"></div>
                 <div
                   className={`h-3 absolute ${color} transition-all duration-500`}
                   style={{ left: `${leftPos}%`, width: `${barWidth}%` }}
@@ -87,9 +89,9 @@ const HouseholdSizeStats = ({ selectedMonth }) => {
           );
         })}
         <div className="flex justify-between text-xs text-gray-400 mt-2 px-1">
-          <span>-50%</span>
           <span>0%</span>
-          <span>+50%</span>
+          <span>50%</span>
+          <span>100%</span>
         </div>
       </div>
     </div>
