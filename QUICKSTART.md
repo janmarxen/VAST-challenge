@@ -40,7 +40,7 @@ Wait for:
 - Frontend: `webpack compiled successfully`
 
 Then open:
-- **Dashboard**: http://localhost:3000
+- **Dashboard**: http://localhost:8080
 - **API Health Check**: http://localhost:5000/health
 
 ## Step 4: Verify Installation
