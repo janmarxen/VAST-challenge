@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title></title>
+<style>
+body {
+    font-family: "Times New Roman", serif;
+    font-size: 12pt;
+    color: black;
+    margin: 1in;
+    line-height: 1.15;
+}
+
+h2 {
+    font-size: 18pt;
+    font-weight: bold;
+    margin: 0;
+}
+
+h3 {
+    font-size: 13.5pt;
+    font-weight: bold;
+    margin: 0;
+}
+
+p {
+    margin: 0 0 10pt 0;
+}
+
+a {
+    color: blue;
+    text-decoration: underline;
+}
+
+a:visited {
+    color: purple;
+}
+
+.highlight {
+    background-color: yellow;
+}
+
+.calibri {
+    font-family: Calibri, sans-serif;
+    font-size: 11pt;
+}
+
+.arial {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+}
+
+.center {
+    text-align: center;
+}
+
+.indent {
+    margin-left: 0.25in;
+}
+
+.divider {
+    border-bottom: 1pt solid black;
+    padding-bottom: 1pt;
+    margin-bottom: 10pt;
+}
+</style>
+</head>
+<body>
+
+<h2 class="calibri center">Entry Name: "EngageViz"</h2>
+
+<h2 class="calibri center">VAST Challenge 2022<br><u>Challenge 3</u></h2>
+
+<h3 class="calibri">&nbsp;</h3>
+
+<h3 class="calibri">&nbsp;</h3>
+
+<h3 class="calibri">Team Members:</h3>
+
+<p class="calibri">Michal Sterzel, University of Luxembourg &amp; UPC Universitat Politècnica de Catalunya, <a href="mailto:michal.sterzel.001@student.uni.lu">michal.sterzel.001@student.uni.lu</a><br>
+Thomas Gantz, University of Luxembourg &amp; Sorbonne Université, <a href="mailto:thomas.gantz.001@student.uni.lu">thomas.gantz.001@student.uni.lu</a><br>
+Jan Marxen, University of Luxembourg &amp; Sorbonne Université, <a href="mailto:jan.esquivel.001@student.uni.lu">jan.esquivel.001@student.uni.lu</a></p>
+
+<p class="calibri"><b>Student Team:</b> YES</p>
+
+<h3 class="calibri">Tools Used:</h3>
+
+<p class="calibri"><b>Backend:</b> Python 3.11, Flask, Pandas, NumPy, Scikit-learn (K-Means clustering), Pytest</p>
+
+<p class="calibri"><b>Frontend:</b> React 18, D3.js v7, Axios, TailwindCSS</p>
+
+<p class="calibri"><b>Infrastructure:</b> Docker, Docker Compose, Nginx</p>
+
+<p class="calibri"><b>Approximately how many hours were spent working on this submission in total?</b></p>
+
+<p class="calibri">Approximately 45 hours (≈15 hours per team member)</p>
+
+<p class="calibri"><b>Video</b></p>
+
+<p class="calibri"><b><a href="#">[VIDEO LINK TO BE ADDED]</a></b></p>
+
+<div class="divider"></div>
+
+<p class="arial">Use visual analytics to analyze the available data and develop responses to the questions to be provided. In addition, prepare a video that shows how you used visual analytics to solve this challenge.</p>
+
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+
+<p class="calibri"><b>Questions</b></p>
+
+<p class="calibri"><b>1</b> - <span class="arial">Over the period covered by the dataset, which businesses appear to be more prosperous? Which appear to be struggling? Describe your rationale for your answers. Limit your response to 10 images and 500 words.</span></p>
+
+<p>&nbsp;</p>
+
+<p class="calibri"><b><i><span class="highlight">Provide your answer and corresponding images here.</span></i></b></p>
+
+<p class="calibri"><b>2</b> - <span class="arial">How does the financial health of the residents change over the period covered by the dataset? How do wages compare to the overall cost of living in Engagement? Are there groups that appear to exhibit similar patterns? Describe your rationale for your answers. Limit your response to 10 images and 500 words.</span></p>
+
+<p>&nbsp;</p>
+
+<p class="calibri"><b>Answer:</b></p>
+
+<p class="calibri">We analyzed resident financial health through three lenses: geographic distribution, demographic disparities, and expense trajectories.</p>
+
+<p class="calibri"><b>Geographic Financial Health.</b> A building-level heatmap colors each residential structure by average savings rate: red for break-even or negative, yellow for moderate, green for high savings. Figure 1 shows the city at the beginning of the dataset (April 2022), while Figure 2 shows a later snapshot. The visualization reveals scattered "red pockets" across Engagement, often bordering healthier zones. These clusters suggest localized stressors such as higher living costs or limited access to stable employment. Comparing the two snapshots shows these red zones remain persistent rather than expanding significantly, indicating chronic rather than worsening conditions in specific neighborhoods.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/geog_fin_health_beginning.png" alt="Geographic Financial Health Beginning" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;">
+<img src="./img/geog_fin_health.png" alt="Geographic Financial Health Later" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;"><br>
+<i>Figure 1 (left): Geographic financial health at the start of the period. Figure 2 (right): Geographic financial health later in the dataset.</i>
+</p>
+
+<p class="calibri"><b>Wages vs. Cost of Living.</b> The "Living Gap" scatter plot places each resident by monthly income (x-axis) against cost of living (y-axis). A diagonal reference line marks break-even; residents below the line save money, those above spend more than they earn. Figure 3 shows all residents, with most clustering safely below the line, but a visible band hugs the break-even threshold. Filtering by household structure (Figures 4 and 5) reveals that families with children sit closer to the line than singles or couples without children, despite often having similar or higher incomes.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/living_gap_all.png" alt="Living Gap All Residents" style="max-width:90%; margin:10px;"><br>
+<i>Figure 3: All residents.</i><br><br>
+<img src="./img/living_gap_w_child.png" alt="Living Gap With Children" style="max-width:90%; margin:10px;"><br>
+<i>Figure 4: Families with children.</i><br><br>
+<img src="./img/living_gap_wo_child.png" alt="Living Gap Without Children" style="max-width:90%; margin:10px;"><br>
+<i>Figure 5: Households without children.</i>
+</p>
+
+<p class="calibri"><b>Cluster Patterns.</b> K-Means clustering on demographics and financial metrics surfaces three distinct resident profiles shown in the parallel coordinates plot (Figure 6): <b>Affluent Achievers (red)</b>, couples and families with very high incomes who keep costs in check; <b>Stretched Households (blue)</b>, lower-income residents with average living costs, leaving little room to save; <b>Lean Savers (orange)</b>, mostly single adults without children, with average incomes but very low costs. Figure 7 breaks down savings rates by education and household size, showing that education level is highly correlated with the savings rate.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/demographic_parallel_plot.png" alt="Parallel Coordinates Clusters" style="max-width:55%; margin:10px;"><img src="./img/demographic_savings_rates.png" alt="Savings by Demographics" style="max-width:28%; margin:10px;"><br>
+<i>Figure 6 (left): Parallel coordinates showing cluster profiles. Figure 7 (right): Savings rates by education and household size.</i>
+</p>
+
+<p class="calibri"><b>Expense Trajectories.</b> A stacked area chart (Figure 8) tracks average monthly income (dashed line) against cumulative expenses (shelter, food, recreation, education). Shelter dominates fixed costs; food and recreation absorb most discretionary spending. Figure 9 provides a static breakdown of city-wide expenses for a single month. Finally, Figure 10 plots savings rate against a composite Financial Stress metric. Residents in the upper-left quadrant repeatedly spend more than they earn. Cluster colors confirm that Stretched Households consistently occupy the high-stress zone while Lean Savers and Affluent Achievers remain resilient.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/financial_flow.png" alt="Financial Flow Over Time" style="max-width:55%; margin:5px;"><img src="./img/financial_flow_expenses_static.png" alt="City-wide Expenses" style="max-width:30%; margin:5px;"><br>
+<i>Figure 8 (left): Income vs. stacked expenses over time. Figure 9 (right): City-wide expense breakdown.</i>
+</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/savings_vs_fin_stress.png" alt="Savings vs Financial Stress" style="max-width:35%; margin:10px;"><br>
+<i>Figure 10: Savings rate vs. Financial Stress by cluster.</i>
+</p>
+
+<p class="calibri"><b>Conclusion.</b> Financial health in Engagement is stable on aggregate but uneven across groups. The strongest predictor of financial strain is household structure: families with children face higher fixed costs and tighter margins regardless of income. Education level also correlates with savings: higher educational attainment is associated with higher savings rates, although it does not fully eliminate risk for some households. Geographic hotspots of low savings persist over time, suggesting targeted interventions (such as childcare subsidies, workforce and education programs, or localized financial counseling) could have outsized impact on the most vulnerable residents.</p>
+
+<p class="calibri"><b>3</b> - <span class="arial">Describe the health of the various employers within the city limits. What employment patterns do you observe? Do you notice any areas of particularly high or low turnover? Limit your response to 10 images and 500 words.</span></p>
+
+<p class="calibri"><b><i><span class="highlight">Provide your answer and corresponding images here.</span></i></b></p>
+
+<p>&nbsp;</p>
+
+</body>
+</html>
