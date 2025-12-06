@@ -6,7 +6,7 @@ import GeographicFinancialHeatmap from './TabGeographic/GeographicFinancialHeatm
 import CityWideExpenses from './TabFinancialFlow/CityWideExpenses';
 import SavingsRateByEducation from './TabLivingGap/SavingsRateByEducation';
 import HouseholdSizeStats from './TabLivingGap/HouseholdSizeStats';
-import FoodHungerScatter from './TabFinancialFlow/FoodHungerScatter';
+import InequalityTimeline from './TabFinancialFlow/InequalityTimeline';
 
 /**
  * Resident Financial Health Dashboard (Question 2)
@@ -143,7 +143,7 @@ function ResidentDashboard() {
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
         <h3 className="text-xl font-bold text-gray-800 mb-3">Demographic Disparities & The Living Gap</h3>
         <p className="text-gray-700 leading-relaxed mb-3">
-          After locating <em>where</em> financial stress appears, this tab explains <em>who</em> is affected.
+          After locating <em>where</em> low savings or inequality appears, this tab explains <em>who</em> is affected.
           Clusters highlight a few recurring household "lifestyles" and how each group balances income, costs and savings.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
@@ -249,39 +249,59 @@ function ResidentDashboard() {
     <div className="space-y-8">
       {/* Text Section */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-        <h3 className="text-xl font-bold text-gray-800 mb-3">Expense Analysis & Health Impacts</h3>
+        <h3 className="text-xl font-bold text-gray-800 mb-3">Expense Analysis & Inequality Trends</h3>
         <p className="text-gray-700 leading-relaxed mb-4">
-          Follow how money flows through residents' budgets and how close they run to the edge. The stacked chart tracks average wages and monthly expenses, the city-wide bars summarize where the money goes in the selected month, and the scatter at the bottom reveals which clusters manage to save versus those living under persistent financial stress.
+          Follow how money flows through residents' budgets and track <strong>economic inequality</strong> over time. 
+          The Gini coefficient measures the gap between rich and poor: 0 means perfect equality, 1 means total inequality.
         </p>
         <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
           <p className="text-sm text-amber-900">
-            <strong>📉 Analysis Strategy:</strong> First, scan for periods where the dashed wage line drifts toward the top of the colored expense bands—those months signal shrinking room to save. Next, use the city-wide bars to see which categories (shelter, food, recreation, education) are driving costs. Finally, read the <em>Savings vs. Financial Stress</em> scatter to see how often residents dip into negative savings and which clusters consistently sit in the high-stress zone.
+            <strong>📉 Analysis Strategy:</strong> Start with the <em>Inequality Timeline</em> to see if the income gap is stable, widening, or narrowing. 
+            Then check the stacked expenses chart to understand where money goes, and use the city-wide bars to compare spending categories.
           </p>
+        </div>
+      </div>
+
+      {/* Inequality Timeline - New Feature */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+        <div className="h-[320px]">
+          <InequalityTimeline selectedMonth={selectedMonth} onMonthSelect={setSelectedMonth} />
+        </div>
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700">
+          <div className="bg-blue-50 p-3 rounded-lg">
+            <strong className="text-blue-800">Income Gini (blue)</strong>: Measures inequality in monthly earnings. 
+            Higher values indicate a wider gap between top earners and the rest.
+          </div>
+          <div className="bg-red-50 p-3 rounded-lg">
+            <strong className="text-red-800">Savings Gini (red)</strong>: Measures inequality in savings rates. 
+            This captures who can build a safety net versus who lives paycheck-to-paycheck.
+          </div>
         </div>
       </div>
 
       {/* Visualization */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col" style={{ height: '800px' }}>
-          <FinancialTrajectories selectedMonth={selectedMonth} />
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col" style={{ minHeight: '550px' }}>
+          <div className="flex-1" style={{ minHeight: '400px' }}>
+            <FinancialTrajectories selectedMonth={selectedMonth} />
+          </div>
           <div className="mt-4 text-sm text-gray-700">
-            <h4 className="font-semibold text-gray-800 mb-2">Who is under financial pressure?</h4>
+            <h4 className="font-semibold text-gray-800 mb-2">Expense Composition Over Time</h4>
             <p>
-              Each dot in the resident scatter represents a person in the chosen month. People in the lower‑right corner save a healthy share of income with low Financial Stress; those pulled up and left are repeatedly spending more than they earn or facing high expenses relative to income. Cluster colors reveal which lifestyles stay resilient as costs change.
+              The stacked area shows average monthly expenses by category. The dashed line represents average wages. 
+              When the line nears the top of the colored bands, residents have less room to save.
             </p>
           </div>
         </div>
         <div className="lg:col-span-1 flex flex-col gap-6">
            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full">
-             <h4 className="text-sm font-semibold text-gray-800 mb-2">City-wide snapshot for the selected month</h4>
+             <h4 className="text-sm font-semibold text-gray-800 mb-2">City-wide snapshot for {selectedMonth}</h4>
              <p className="text-xs text-gray-600 mb-3">
-               These bars compress the entire city's budget into a single month: shelter dominates fixed costs, while food and recreation absorb most discretionary spending. The total income figure below shows how much room there is before households start cutting back.
+               These bars compress the entire city's budget into a single month: shelter dominates fixed costs, while food and recreation absorb most discretionary spending.
              </p>
              <CityWideExpenses selectedMonth={selectedMonth} />
            </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-full">
-            <FoodHungerScatter selectedMonth={selectedMonth} />
-          </div>
+          {/* Savings vs Financial Stress visualization removed in favor of inequality analysis */}
         </div>
       </div>
       

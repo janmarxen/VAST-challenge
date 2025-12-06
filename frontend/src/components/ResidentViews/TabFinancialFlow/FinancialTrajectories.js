@@ -68,7 +68,7 @@ function FinancialTrajectories({ filterCluster, selectedMonth }) {
         return obj;
     }).sort((a, b) => a.month - b.month);
 
-    const margin = { top: 30, right: 130, bottom: 90, left: 80 };
+    const margin = { top: 55, right: 130, bottom: 90, left: 80 };
     const width = dimensions.width - margin.left - margin.right;
     const height = dimensions.height - margin.top - margin.bottom;
 
@@ -160,14 +160,15 @@ function FinancialTrajectories({ filterCluster, selectedMonth }) {
                 .attr('stroke-width', 2)
                 .attr('stroke-dasharray', '4');
 
+            // Position label at top-right of the line, not overlapping title
             g.append('text')
-                .attr('x', xPos)
-                .attr('y', -10)
-                .attr('text-anchor', 'middle')
+                .attr('x', xPos + 5)
+                .attr('y', 22)
+                .attr('text-anchor', 'start')
                 .style('fill', '#2563eb')
                 .style('font-weight', 'bold')
-                .style('font-size', '12px')
-                .text('Selected');
+                .style('font-size', '11px')
+                .text(selectedMonth);
         }
     }
 
@@ -222,8 +223,8 @@ function FinancialTrajectories({ filterCluster, selectedMonth }) {
       </div>
       <div
       ref={containerRef}
-            className="w-full"
-            style={{ height: "100%", minHeight: "600px" }}   // ← guarantees enough room
+            className="w-full flex-1"
+            style={{ minHeight: "350px" }}
           >
         {loading ? (
             <div className="flex items-center justify-center h-full text-gray-400">Loading data...</div>

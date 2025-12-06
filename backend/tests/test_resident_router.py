@@ -100,6 +100,31 @@ def test_expense_analysis_with_month_filter(client):
     assert 'financial_vs_stability' in data and isinstance(data['financial_vs_stability'], list)
     assert 'sampled_counts' in data and isinstance(data['sampled_counts'], dict)
 
+
+def test_inequality_timeline_endpoint(client):
+    """Test GET /api/resident/inequality-timeline"""
+    response = client.get('/api/resident/inequality-timeline')
+    assert response.status_code == 200
+    data = response.get_json()
+    # Check response structure
+    assert 'timeline' in data
+    assert 'description' in data
+    assert isinstance(data['timeline'], list)
+    assert isinstance(data['description'], dict)
+    # Check timeline entries have expected fields
+    if len(data['timeline']) > 0:
+        entry = data['timeline'][0]
+        assert 'month' in entry
+        assert 'giniIncome' in entry
+        assert 'giniSavingsRate' in entry
+        assert 'sampleSize' in entry
+        # Gini values should be between 0 and 1 (or None)
+        if entry['giniIncome'] is not None:
+            assert 0 <= entry['giniIncome'] <= 1
+        if entry['giniSavingsRate'] is not None:
+            assert 0 <= entry['giniSavingsRate'] <= 1
+
+
 # TODO: Add more comprehensive tests as data processing is implemented
 # - Test clustering algorithm outputs
 # - Test demographic filtering logic

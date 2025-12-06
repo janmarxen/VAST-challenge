@@ -258,7 +258,7 @@ const GeographicFinancialHeatmap = ({ selectedMonth }) => {
           <br />
           <br />
           As you move across the map, look for small red pockets next to healthier
-          zones. These local clusters of financial stress may signal neighborhoods
+          zones. These local clusters of low savings may signal neighborhoods
           where targeted support or policy interventions could have an impact.
         </div>
       </div>

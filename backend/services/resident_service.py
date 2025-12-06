@@ -557,3 +557,92 @@ def get_expense_analysis_data(month=None):
         raise e
 
 
+def _compute_gini(values):
+    """
+    Compute the Gini coefficient for a given array of values.
+    
+    The Gini coefficient measures inequality on a scale of 0 to 1:
+    - 0 = perfect equality (everyone has the same value)
+    - 1 = perfect inequality (one person has everything)
+    
+    Formula: G = (2 * sum(i * y_i)) / (n * sum(y_i)) - (n + 1) / n
+    where y_i are the sorted values and i is the rank (1-indexed).
+    """
+    values = np.array(values, dtype=float)
+    # Remove NaN and infinite values
+    values = values[np.isfinite(values)]
+    if len(values) == 0:
+        return np.nan
+    
+    # For Gini on income/savings, we need non-negative values
+    # Shift values if there are negatives (for SavingsRate which can be negative)
+    if np.any(values < 0):
+        values = values - values.min()
+    
+    # Handle edge case where all values are zero
+    if np.sum(values) == 0:
+        return 0.0
+    
+    # Sort values
+    sorted_values = np.sort(values)
+    n = len(sorted_values)
+    
+    # Compute Gini using the formula
+    cumsum = np.cumsum(sorted_values)
+    gini = (2 * np.sum((np.arange(1, n + 1) * sorted_values))) / (n * np.sum(sorted_values)) - (n + 1) / n
+    
+    return float(gini)
+
+
+def get_inequality_over_time():
+    """
+    Compute Gini coefficient for Income and SavingsRate over time.
+    
+    Returns monthly Gini coefficients showing how inequality evolves
+    across the 15-month observation period.
+    """
+    try:
+        merged_df, _, monthly_financial = _get_data()
+        
+        # monthly_financial has: participantId, month, Income, CostOfLiving, SavingsRate, etc.
+        results = []
+        
+        # Group by month and compute Gini for each
+        for month, month_data in monthly_financial.groupby('month'):
+            income_values = month_data['Income'].dropna()
+            savings_rate_values = month_data['SavingsRate'].dropna()
+            
+            # Filter to positive incomes for meaningful Gini
+            positive_income = income_values[income_values > 0]
+            
+            gini_income = _compute_gini(positive_income) if len(positive_income) > 10 else np.nan
+            gini_savings = _compute_gini(savings_rate_values) if len(savings_rate_values) > 10 else np.nan
+            
+            results.append({
+                'month': str(month),
+                'giniIncome': round(gini_income, 4) if not np.isnan(gini_income) else None,
+                'giniSavingsRate': round(gini_savings, 4) if not np.isnan(gini_savings) else None,
+                'sampleSize': len(month_data),
+                'meanIncome': round(float(income_values.mean()), 2) if len(income_values) > 0 else None,
+                'meanSavingsRate': round(float(savings_rate_values.mean()), 4) if len(savings_rate_values) > 0 else None
+            })
+        
+        # Sort by month
+        results.sort(key=lambda x: x['month'])
+        
+        return {
+            'timeline': results,
+            'description': {
+                'giniIncome': 'Gini coefficient of monthly income distribution (0=equality, 1=inequality)',
+                'giniSavingsRate': 'Gini coefficient of savings rate distribution',
+                'formula': 'G = (2 * Σ(i × yᵢ)) / (n × Σyᵢ) − (n+1)/n, where yᵢ are sorted values'
+            }
+        }
+        
+    except Exception as e:
+        print("Error in get_inequality_over_time:")
+        import traceback
+        traceback.print_exc()
+        raise e
+
+

@@ -15,7 +15,8 @@ from services.resident_service import (
     get_resident_clusters,
     get_parallel_coordinates_data,
     get_geographic_financial_health,
-    get_expense_analysis_data
+    get_expense_analysis_data,
+    get_inequality_over_time
 )
 
 bp = Blueprint('resident', __name__)
@@ -115,6 +116,23 @@ def geographic_financial_health():
     """
     try:
         data = get_geographic_financial_health()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/inequality-timeline', methods=['GET'])
+def inequality_timeline():
+    """
+    Get Gini coefficient of income and savings rate over time.
+    
+    Returns monthly Gini coefficients showing how economic inequality
+    evolves across the observation period.
+    
+    The Gini coefficient ranges from 0 (perfect equality) to 1 (perfect inequality).
+    """
+    try:
+        data = get_inequality_over_time()
         return jsonify(data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
