@@ -7,7 +7,7 @@ import { fetchBusinessTrends } from '../../utils/api';
  * Shows which businesses are prospering (↑ green) vs struggling (↓ red)
  * Uses arrows and color encoding to clearly indicate trends
  */
-function BusinessTrends({ venueType, startDate, endDate, onDataLoaded }) {
+function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, onDataLoaded }) {
   const svgRef = useRef();
   const [data, setData] = useState({ venues: [], period_info: null });
   const [loading, setLoading] = useState(true);
@@ -17,6 +17,7 @@ function BusinessTrends({ venueType, startDate, endDate, onDataLoaded }) {
     setLoading(true);
     fetchBusinessTrends({
       venueType,
+      venueId,
       startDate,
       endDate
     })
@@ -32,7 +33,7 @@ function BusinessTrends({ venueType, startDate, endDate, onDataLoaded }) {
         console.error('Error fetching business trends:', error);
         setLoading(false);
       });
-  }, [venueType, startDate, endDate, onDataLoaded]);
+  }, [venueType, venueId, startDate, endDate, onDataLoaded]);
 
   useEffect(() => {
     if (!data.venues || !data.venues.length) return;
@@ -52,16 +53,17 @@ function BusinessTrends({ venueType, startDate, endDate, onDataLoaded }) {
     // Sort venues based on selection
     let sortedVenues = [...data.venues];
     if (sortBy === 'change') {
-      sortedVenues.sort((a, b) => b.spending_pct_change - a.spending_pct_change);
+      // Use metric to determine sort field
+      const changeField = metric === 'checkin_count' ? 'visits_pct_change' : 'spending_pct_change';
+      sortedVenues.sort((a, b) => (b[changeField] || b.spending_pct_change) - (a[changeField] || a.spending_pct_change));
     } else if (sortBy === 'spending') {
       sortedVenues.sort((a, b) => b.total_spending - a.total_spending);
     } else if (sortBy === 'visits') {
       sortedVenues.sort((a, b) => b.total_visits - a.total_visits);
     }
 
-    // Take top venues to fit in chart
-    const maxVenues = 15;
-    const displayVenues = sortedVenues.slice(0, maxVenues);
+    // Take top N venues (prop from parent)
+    const displayVenues = sortedVenues.slice(0, topN || 15);
 
     const g = svg.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
@@ -299,7 +301,7 @@ function BusinessTrends({ venueType, startDate, endDate, onDataLoaded }) {
       d3.selectAll('.business-trend-tooltip').remove();
     };
 
-  }, [data, sortBy]);
+  }, [data, sortBy, metric, topN]);
 
   if (loading) {
     return <div className="flex items-center justify-center h-64">Loading trends...</div>;

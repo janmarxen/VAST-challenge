@@ -6,16 +6,15 @@ import { fetchMarketShare } from '../../utils/api';
  * Market Share Bar/Pie Chart
  * Shows spending distribution by venue
  */
-function MarketShareStream({ venueType, participantId, startDate, endDate, onDataLoaded }) {
+function MarketShareStream({ venueType, venueId, participantId, startDate, endDate, topN, onDataLoaded }) {
   const svgRef = useRef();
   const [data, setData] = useState({ venues: [], total_spending: 0 });
   const [loading, setLoading] = useState(true);
   const [chartType, setChartType] = useState('bar');
-  const [topN, setTopN] = useState(10);
 
   useEffect(() => {
     setLoading(true);
-    fetchMarketShare({ venueType, participantId, startDate, endDate })
+    fetchMarketShare({ venueType, venueId, participantId, startDate, endDate })
       .then(response => {
         setData(response);
         setLoading(false);
@@ -28,7 +27,7 @@ function MarketShareStream({ venueType, participantId, startDate, endDate, onDat
         console.error('Error fetching market share:', error);
         setLoading(false);
       });
-  }, [venueType, participantId, startDate, endDate, onDataLoaded]);
+  }, [venueType, venueId, participantId, startDate, endDate, onDataLoaded]);
 
   useEffect(() => {
     if (!data.venues || !data.venues.length) return;
@@ -78,7 +77,7 @@ function MarketShareStream({ venueType, participantId, startDate, endDate, onDat
         .attr('y', d => yScale(d.percentage))
         .attr('width', xScale.bandwidth())
         .attr('height', d => innerHeight - yScale(d.percentage))
-        .attr('fill', d => d.venue_type === 'Restaurant' ? '#3b82f6' : '#10b981')
+        .attr('fill', d => d.venue_type === 'Restaurant' ? '#3b82f6' : '#8b5cf6')
         .on('mouseover', function(event, d) {
           d3.select(this).attr('opacity', 0.8);
           tooltip.transition().duration(200).style('opacity', 0.9);
@@ -145,7 +144,7 @@ function MarketShareStream({ venueType, participantId, startDate, endDate, onDat
 
       slices.append('path')
         .attr('d', arc)
-        .attr('fill', d => d.data.venue_type === 'Restaurant' ? '#3b82f6' : '#10b981')
+        .attr('fill', d => d.data.venue_type === 'Restaurant' ? '#3b82f6' : '#8b5cf6')
         .attr('stroke', 'white')
         .attr('stroke-width', 2)
         .on('mouseover', function(event, d) {
@@ -218,24 +217,9 @@ function MarketShareStream({ venueType, participantId, startDate, endDate, onDat
             <option value="pie">Pie Chart</option>
           </select>
         </div>
-        <div>
-          <label className="mr-2 text-sm">Top N:</label>
-          <select 
-            value={topN} 
-            onChange={(e) => setTopN(parseInt(e.target.value))}
-            className="border rounded px-2 py-1 text-sm"
-          >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="15">15</option>
-            <option value="20">20</option>
-          </select>
-        </div>
       </div>
       <div className="text-sm text-gray-600 mb-2">
-        Total spending: ${data.total_spending.toFixed(2)} |
-        <span className="inline-block w-3 h-3 bg-blue-500 ml-2 mr-1"></span>Restaurant
-        <span className="inline-block w-3 h-3 bg-green-500 ml-2 mr-1"></span>Pub
+        Total spending: ${data.total_spending.toFixed(2)} | Showing top {topN} venues
       </div>
       <svg ref={svgRef}></svg>
     </div>

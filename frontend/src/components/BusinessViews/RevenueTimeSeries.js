@@ -6,11 +6,11 @@ import { fetchVenueTimeseries } from '../../utils/api';
  * Venue Time Series Visualization
  * Shows check-in count and spending over time for venues
  */
-function RevenueTimeSeries({ venueId, venueType, participantId, startDate, endDate, resolution }) {
+function RevenueTimeSeries({ venueId, venueType, participantId, startDate, endDate, metric }) {
   const svgRef = useRef();
   const [data, setData] = useState({ timeseries: [], max_occupancy: null });
   const [loading, setLoading] = useState(true);
-  const [metric, setMetric] = useState('checkin_count');
+  const [resolution, setResolution] = useState('day'); // Local resolution state
 
   useEffect(() => {
     setLoading(true);
@@ -190,14 +190,16 @@ function RevenueTimeSeries({ venueId, venueType, participantId, startDate, endDa
   return (
     <div>
       <div className="mb-2">
-        <label className="mr-2 text-sm">Metric:</label>
+        <label className="mr-2 text-sm">Resolution:</label>
         <select 
-          value={metric} 
-          onChange={(e) => setMetric(e.target.value)}
+          value={resolution} 
+          onChange={(e) => setResolution(e.target.value)}
           className="border rounded px-2 py-1 text-sm"
         >
-          <option value="checkin_count">Check-in Count</option>
-          <option value="total_spending">Total Spending</option>
+          <option value="hour">Hourly</option>
+          <option value="day">Daily</option>
+          <option value="week">Weekly</option>
+          <option value="month">Monthly</option>
         </select>
       </div>
       <svg ref={svgRef}></svg>

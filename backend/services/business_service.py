@@ -318,7 +318,7 @@ def get_venue_timeseries(venue_id=None, venue_type=None, participant_id=None,
     }
 
 
-def get_market_share_data(start_date=None, end_date=None, venue_type=None, participant_id=None):
+def get_market_share_data(start_date=None, end_date=None, venue_type=None, venue_id=None, participant_id=None):
     """
     Calculate market share distribution for venues.
     
@@ -329,6 +329,8 @@ def get_market_share_data(start_date=None, end_date=None, venue_type=None, parti
     # Apply filters
     if venue_type is not None:
         df = df[df['venue_type'] == venue_type]
+    if venue_id is not None:
+        df = df[df['venue_id'] == venue_id]
     if participant_id is not None:
         df = df[df['participant_id'] == participant_id]
     if start_date is not None:
@@ -447,7 +449,7 @@ def get_participant_list(venue_type=None, venue_id=None):
     return participants
 
 
-def get_business_trends(start_date=None, end_date=None, venue_type=None):
+def get_business_trends(start_date=None, end_date=None, venue_type=None, venue_id=None):
     """
     Calculate business trends by comparing first half vs second half of the period.
     
@@ -459,6 +461,10 @@ def get_business_trends(start_date=None, end_date=None, venue_type=None):
     # Apply venue type filter
     if venue_type is not None:
         df = df[df['venue_type'] == venue_type]
+    
+    # Apply venue id filter
+    if venue_id is not None:
+        df = df[df['venue_id'] == venue_id]
     
     # Apply date filters
     if start_date is not None:

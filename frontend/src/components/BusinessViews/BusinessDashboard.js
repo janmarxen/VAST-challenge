@@ -17,8 +17,13 @@ function BusinessDashboard() {
   const [selectedVenueType, setSelectedVenueType] = useState('');
   const [startDate, setStartDate] = useState('2022-03-01');
   const [endDate, setEndDate] = useState('2022-05-31');
-  const [resolution, setResolution] = useState('day');
   const [loadingParticipants, setLoadingParticipants] = useState(false);
+  
+  // Global metric affects both RevenueTimeSeries and BusinessTrends
+  const [metric, setMetric] = useState('checkin_count'); // 'checkin_count' or 'total_spending'
+  
+  // Global topN for charts (disabled when single venue selected)
+  const [topN, setTopN] = useState(10);
   
   // Shared data for KPIs - populated by child components via callbacks
   const [marketData, setMarketData] = useState(null);
@@ -233,7 +238,7 @@ function BusinessDashboard() {
                 <option value="">All Venues</option>
                 {filteredVenues.map(v => (
                   <option key={`${v.venue_type}-${v.venue_id}`} value={v.venue_id}>
-                    {v.venue_type === 'Restaurant' ? '🍽️' : '🍺'} #{v.venue_id} (Cap: {v.max_occupancy})
+                    {v.venue_type === 'Restaurant' ? '🍽️' : '🍺'} #{v.venue_id}
                   </option>
                 ))}
               </select>
@@ -279,18 +284,44 @@ function BusinessDashboard() {
               />
             </div>
             
-            <div className="min-w-[120px]">
-              <label className="block text-xs font-medium text-gray-500 mb-1">Resolution</label>
+            <div className="min-w-[130px]">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Metric</label>
               <select 
-                value={resolution}
-                onChange={(e) => setResolution(e.target.value)}
+                value={metric}
+                onChange={(e) => setMetric(e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
               >
-                <option value="hour">Hourly</option>
-                <option value="day">Daily</option>
-                <option value="week">Weekly</option>
-                <option value="month">Monthly</option>
+                <option value="checkin_count">Check-in Count</option>
+                <option value="total_spending">Total Spending</option>
               </select>
+            </div>
+            
+            <div className="min-w-[100px]">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Top N Venues</label>
+              <input
+                type="number"
+                min="1"
+                max={filteredVenues.length || 100}
+                value={selectedVenue ? 1 : topN}
+                onChange={(e) => setTopN(Math.max(1, Math.min(filteredVenues.length || 100, parseInt(e.target.value) || 1)))}
+                disabled={!!selectedVenue}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
+              />
+            </div>
+          </div>
+        </div>
+        
+        {/* Color Legend */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 mb-6">
+          <div className="flex items-center justify-center gap-6 text-sm">
+            <span className="text-gray-600 font-medium">Venue Type:</span>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+              <span className="text-gray-700">Restaurant</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+              <span className="text-gray-700">Pub</span>
             </div>
           </div>
         </div>
@@ -315,7 +346,7 @@ function BusinessDashboard() {
               participantId={selectedParticipant}
               startDate={startDate}
               endDate={endDate}
-              resolution={resolution}
+              metric={metric}
             />
           </div>
           
@@ -333,8 +364,11 @@ function BusinessDashboard() {
             </div>
             <BusinessTrends 
               venueType={selectedVenueType}
+              venueId={selectedVenue}
               startDate={startDate}
               endDate={endDate}
+              metric={metric}
+              topN={selectedVenue ? 1 : topN}
               onDataLoaded={handleTrendsDataLoaded}
             />
           </div>
@@ -354,9 +388,11 @@ function BusinessDashboard() {
             </div>
             <MarketShareStream 
               venueType={selectedVenueType}
+              venueId={selectedVenue}
               participantId={selectedParticipant}
               startDate={startDate}
               endDate={endDate}
+              topN={selectedVenue ? 1 : topN}
               onDataLoaded={handleMarketDataLoaded}
             />
           </div>
@@ -375,9 +411,11 @@ function BusinessDashboard() {
             </div>
             <PerformanceScatter 
               venueType={selectedVenueType}
+              venueId={selectedVenue}
               participantId={selectedParticipant}
               startDate={startDate}
               endDate={endDate}
+              topN={selectedVenue ? 1 : topN}
             />
           </div>
         </div>

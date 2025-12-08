@@ -6,14 +6,14 @@ import { fetchMarketShare } from '../../utils/api';
  * Performance Scatter Plot
  * Shows venue performance comparison: visits vs spending
  */
-function PerformanceScatter({ venueType, participantId, startDate, endDate }) {
+function PerformanceScatter({ venueType, venueId, participantId, startDate, endDate, topN }) {
   const svgRef = useRef();
   const [data, setData] = useState({ venues: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetchMarketShare({ venueType, participantId, startDate, endDate })
+    fetchMarketShare({ venueType, venueId, participantId, startDate, endDate })
       .then(response => {
         setData(response);
         setLoading(false);
@@ -22,14 +22,14 @@ function PerformanceScatter({ venueType, participantId, startDate, endDate }) {
         console.error('Error fetching performance data:', error);
         setLoading(false);
       });
-  }, [venueType, participantId, startDate, endDate]);
+  }, [venueType, venueId, participantId, startDate, endDate]);
 
   useEffect(() => {
     if (!data.venues || !data.venues.length) return;
 
     const width = 800;
     const height = 350;
-    const margin = { top: 20, right: 120, bottom: 50, left: 60 };
+    const margin = { top: 20, right: 30, bottom: 50, left: 60 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -39,22 +39,25 @@ function PerformanceScatter({ venueType, participantId, startDate, endDate }) {
 
     svg.selectAll('*').remove();
 
+    // Apply topN filtering
+    const chartVenues = data.venues.slice(0, topN || data.venues.length);
+
     const g = svg.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
     // Scales
     const xScale = d3.scaleLinear()
-      .domain([0, d3.max(data.venues, d => d.visit_count) * 1.1])
+      .domain([0, d3.max(chartVenues, d => d.visit_count) * 1.1])
       .nice()
       .range([0, innerWidth]);
 
     const yScale = d3.scaleLinear()
-      .domain([0, d3.max(data.venues, d => d.total_spending) * 1.1])
+      .domain([0, d3.max(chartVenues, d => d.total_spending) * 1.1])
       .nice()
       .range([innerHeight, 0]);
 
     const sizeScale = d3.scaleSqrt()
-      .domain([0, d3.max(data.venues, d => d.percentage)])
+      .domain([0, d3.max(chartVenues, d => d.percentage)])
       .range([4, 20]);
 
     // Grid lines
@@ -70,13 +73,13 @@ function PerformanceScatter({ venueType, participantId, startDate, endDate }) {
 
     // Points
     const circles = g.selectAll('circle')
-      .data(data.venues)
+      .data(chartVenues)
       .enter()
       .append('circle')
       .attr('cx', d => xScale(d.visit_count))
       .attr('cy', d => yScale(d.total_spending))
       .attr('r', d => sizeScale(d.percentage))
-      .attr('fill', d => d.venue_type === 'Restaurant' ? '#3b82f6' : '#10b981')
+      .attr('fill', d => d.venue_type === 'Restaurant' ? '#3b82f6' : '#8b5cf6')
       .attr('opacity', 0.7)
       .attr('stroke', 'white')
       .attr('stroke-width', 1);
@@ -145,46 +148,10 @@ function PerformanceScatter({ venueType, participantId, startDate, endDate }) {
       .attr('font-size', '12px')
       .text('Total Spending ($)');
 
-    // Legend
-    const legend = svg.append('g')
-      .attr('transform', `translate(${width - margin.right + 20}, ${margin.top})`);
-
-    legend.append('text')
-      .attr('font-weight', 'bold')
-      .attr('font-size', '12px')
-      .text('Venue Type');
-
-    const legendItems = [
-      { label: 'Restaurant', color: '#3b82f6' },
-      { label: 'Pub', color: '#10b981' }
-    ];
-
-    legendItems.forEach((item, i) => {
-      const lg = legend.append('g')
-        .attr('transform', `translate(0, ${20 + i * 20})`);
-      
-      lg.append('circle')
-        .attr('r', 6)
-        .attr('fill', item.color)
-        .attr('opacity', 0.7);
-      
-      lg.append('text')
-        .attr('x', 12)
-        .attr('y', 4)
-        .attr('font-size', '11px')
-        .text(item.label);
-    });
-
-    legend.append('text')
-      .attr('y', 80)
-      .attr('font-weight', 'bold')
-      .attr('font-size', '12px')
-      .text('Size = Market Share');
-
     return () => {
       tooltip.remove();
     };
-  }, [data]);
+  }, [data, topN]);
 
   if (loading) return <div className="text-center py-8">Loading performance data...</div>;
 
@@ -195,7 +162,7 @@ function PerformanceScatter({ venueType, participantId, startDate, endDate }) {
   return (
     <div>
       <div className="text-sm text-gray-600 mb-2">
-        Showing {data.venues.length} venues | Bubble size indicates market share
+        Showing top {Math.min(topN || data.venues.length, data.venues.length)} venues | Bubble size = market share
       </div>
       <svg ref={svgRef}></svg>
     </div>
