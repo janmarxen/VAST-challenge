@@ -6,14 +6,14 @@ import { fetchMarketShare } from '../../utils/api';
  * Performance Scatter Plot
  * Shows venue performance comparison: visits vs spending
  */
-function PerformanceScatter({ venueType, startDate, endDate }) {
+function PerformanceScatter({ venueType, participantId, startDate, endDate }) {
   const svgRef = useRef();
   const [data, setData] = useState({ venues: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    fetchMarketShare({ venueType, startDate, endDate })
+    fetchMarketShare({ venueType, participantId, startDate, endDate })
       .then(response => {
         setData(response);
         setLoading(false);
@@ -22,7 +22,7 @@ function PerformanceScatter({ venueType, startDate, endDate }) {
         console.error('Error fetching performance data:', error);
         setLoading(false);
       });
-  }, [venueType, startDate, endDate]);
+  }, [venueType, participantId, startDate, endDate]);
 
   useEffect(() => {
     if (!data.venues || !data.venues.length) return;

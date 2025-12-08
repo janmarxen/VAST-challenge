@@ -28,9 +28,10 @@ export const fetchVenueTimeseries = ({ venueId, venueType, participantId, startD
     .then(response => response.data);
 };
 
-export const fetchMarketShare = ({ venueType, startDate, endDate } = {}) => {
+export const fetchMarketShare = ({ venueType, participantId, startDate, endDate } = {}) => {
   const params = new URLSearchParams();
   if (venueType) params.append('venue_type', venueType);
+  if (participantId) params.append('participant_id', participantId);
   if (startDate) params.append('start_date', startDate);
   if (endDate) params.append('end_date', endDate);
   
@@ -40,6 +41,16 @@ export const fetchMarketShare = ({ venueType, startDate, endDate } = {}) => {
 
 export const fetchVenues = () => {
   return axios.get(`${API_BASE_URL}/business/venues`)
+    .then(response => response.data);
+};
+
+export const fetchParticipants = ({ venueType, venueId } = {}) => {
+  const params = new URLSearchParams();
+  if (venueType) params.append('venue_type', venueType);
+  if (venueId) params.append('venue_id', venueId);
+  
+  const queryString = params.toString();
+  return axios.get(`${API_BASE_URL}/business/participants${queryString ? '?' + queryString : ''}`)
     .then(response => response.data);
 };
 

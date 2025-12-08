@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import RevenueTimeSeries from './RevenueTimeSeries';
 import MarketShareStream from './MarketShareStream';
 import PerformanceScatter from './PerformanceScatter';
-import { fetchVenues } from '../../utils/api';
+import { fetchVenues, fetchParticipants } from '../../utils/api';
 
 /**
  * Business Dashboard - Restaurant and Pub Analysis
@@ -10,12 +10,16 @@ import { fetchVenues } from '../../utils/api';
  */
 function BusinessDashboard() {
   const [venues, setVenues] = useState([]);
+  const [participants, setParticipants] = useState([]);
   const [selectedVenue, setSelectedVenue] = useState(null);
+  const [selectedParticipant, setSelectedParticipant] = useState(null);
   const [selectedVenueType, setSelectedVenueType] = useState('');
   const [startDate, setStartDate] = useState('2022-03-01');
   const [endDate, setEndDate] = useState('2022-05-31');
   const [resolution, setResolution] = useState('day');
+  const [loadingParticipants, setLoadingParticipants] = useState(false);
 
+  // Load venues on mount
   useEffect(() => {
     fetchVenues()
       .then(data => {
@@ -25,6 +29,23 @@ function BusinessDashboard() {
         console.error('Error fetching venues:', error);
       });
   }, []);
+
+  // Load participants when venue type or venue changes
+  useEffect(() => {
+    setLoadingParticipants(true);
+    fetchParticipants({
+      venueType: selectedVenueType || undefined,
+      venueId: selectedVenue || undefined
+    })
+      .then(data => {
+        setParticipants(data);
+        setLoadingParticipants(false);
+      })
+      .catch(error => {
+        console.error('Error fetching participants:', error);
+        setLoadingParticipants(false);
+      });
+  }, [selectedVenueType, selectedVenue]);
 
   const filteredVenues = selectedVenueType 
     ? venues.filter(v => v.venue_type === selectedVenueType)
@@ -57,7 +78,10 @@ function BusinessDashboard() {
           <label className="block text-sm font-medium mb-1">Venue</label>
           <select 
             value={selectedVenue || ''}
-            onChange={(e) => setSelectedVenue(e.target.value ? parseInt(e.target.value) : null)}
+            onChange={(e) => {
+              setSelectedVenue(e.target.value ? parseInt(e.target.value) : null);
+              setSelectedParticipant(null); // Reset participant when venue changes
+            }}
             className="border rounded px-2 py-1"
           >
             <option value="">All Venues</option>
@@ -66,6 +90,26 @@ function BusinessDashboard() {
                 {v.venue_type} #{v.venue_id} (Cap: {v.max_occupancy})
               </option>
             ))}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium mb-1">Participant</label>
+          <select 
+            value={selectedParticipant || ''}
+            onChange={(e) => setSelectedParticipant(e.target.value ? parseInt(e.target.value) : null)}
+            className="border rounded px-2 py-1"
+            disabled={loadingParticipants}
+          >
+            <option value="">All Participants</option>
+            {participants.slice(0, 100).map(p => (
+              <option key={p.participant_id} value={p.participant_id}>
+                #{p.participant_id} ({p.visit_count} visits, ${p.total_spending})
+              </option>
+            ))}
+            {participants.length > 100 && (
+              <option disabled>...and {participants.length - 100} more</option>
+            )}
           </select>
         </div>
         
@@ -110,6 +154,7 @@ function BusinessDashboard() {
           <RevenueTimeSeries 
             venueId={selectedVenue}
             venueType={selectedVenueType}
+            participantId={selectedParticipant}
             startDate={startDate}
             endDate={endDate}
             resolution={resolution}
@@ -120,6 +165,7 @@ function BusinessDashboard() {
           <h3 className="text-lg font-semibold mb-2">Market Share</h3>
           <MarketShareStream 
             venueType={selectedVenueType}
+            participantId={selectedParticipant}
             startDate={startDate}
             endDate={endDate}
           />
@@ -129,6 +175,7 @@ function BusinessDashboard() {
           <h3 className="text-lg font-semibold mb-2">Venue Performance Overview</h3>
           <PerformanceScatter 
             venueType={selectedVenueType}
+            participantId={selectedParticipant}
             startDate={startDate}
             endDate={endDate}
           />

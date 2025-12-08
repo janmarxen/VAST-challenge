@@ -15,6 +15,7 @@ from services.business_service import (
     get_venue_timeseries,
     get_market_share_data,
     get_venue_list,
+    get_participant_list,
     get_unified_dataset_sample
 )
 
@@ -80,6 +81,7 @@ def market_share():
     
     Query params:
     - venue_type: Optional, filter by "Restaurant" or "Pub"
+    - participant_id: Optional, filter by participant
     - start_date: Optional, filter start date (YYYY-MM-DD)
     - end_date: Optional, filter end date (YYYY-MM-DD)
     
@@ -88,6 +90,7 @@ def market_share():
     - total_spending: Total spending across all venues
     """
     venue_type = request.args.get('venue_type')
+    participant_id = request.args.get('participant_id', type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
@@ -99,7 +102,8 @@ def market_share():
         data = get_market_share_data(
             start_date=start_date,
             end_date=end_date,
-            venue_type=venue_type
+            venue_type=venue_type,
+            participant_id=participant_id
         )
         return jsonify(data), 200
     except Exception as e:
@@ -118,6 +122,37 @@ def venues():
         data = get_venue_list()
         return jsonify(data), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/participants', methods=['GET'])
+def participants():
+    """
+    Get list of participants who visited restaurants/pubs.
+    
+    Query params:
+    - venue_type: Optional, filter by "Restaurant" or "Pub"
+    - venue_id: Optional, filter by specific venue
+    
+    Returns:
+    - Array of {participant_id, visit_count, total_spending}
+    """
+    venue_type = request.args.get('venue_type')
+    venue_id = request.args.get('venue_id', type=int)
+    
+    # Validate venue_type if provided
+    if venue_type and venue_type not in ['Restaurant', 'Pub']:
+        return jsonify({'error': 'venue_type must be "Restaurant" or "Pub"'}), 400
+    
+    try:
+        data = get_participant_list(
+            venue_type=venue_type,
+            venue_id=venue_id
+        )
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"[business_router] ERROR in participants: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 

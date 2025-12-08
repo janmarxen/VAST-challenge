@@ -318,7 +318,7 @@ def get_venue_timeseries(venue_id=None, venue_type=None, participant_id=None,
     }
 
 
-def get_market_share_data(start_date=None, end_date=None, venue_type=None):
+def get_market_share_data(start_date=None, end_date=None, venue_type=None, participant_id=None):
     """
     Calculate market share distribution for venues.
     
@@ -329,6 +329,8 @@ def get_market_share_data(start_date=None, end_date=None, venue_type=None):
     # Apply filters
     if venue_type is not None:
         df = df[df['venue_type'] == venue_type]
+    if participant_id is not None:
+        df = df[df['participant_id'] == participant_id]
     if start_date is not None:
         start_dt = pd.to_datetime(start_date)
         if start_dt.tzinfo is None and df['timestamp'].dt.tz is not None:
@@ -405,6 +407,44 @@ def get_venue_list():
         })
     
     return venues
+
+
+def get_participant_list(venue_type=None, venue_id=None):
+    """
+    Get list of all participants who visited restaurants/pubs.
+    
+    Parameters:
+    - venue_type: Optional filter by "Restaurant" or "Pub"
+    - venue_id: Optional filter by specific venue
+    
+    Returns:
+    - Array of {participant_id, visit_count, total_spending}
+    """
+    df = build_unified_dataset()
+    
+    # Apply filters
+    if venue_type is not None:
+        df = df[df['venue_type'] == venue_type]
+    if venue_id is not None:
+        df = df[df['venue_id'] == venue_id]
+    
+    # Aggregate by participant
+    participant_stats = df.groupby('participant_id').agg({
+        'venue_id': 'count',  # visit count
+        'amount': 'sum'  # total spending
+    }).rename(columns={'venue_id': 'visit_count', 'amount': 'total_spending'})
+    
+    participant_stats = participant_stats.reset_index().sort_values('visit_count', ascending=False)
+    
+    participants = []
+    for _, row in participant_stats.iterrows():
+        participants.append({
+            'participant_id': int(row['participant_id']),
+            'visit_count': int(row['visit_count']),
+            'total_spending': round(float(row['total_spending']), 2)
+        })
+    
+    return participants
 
 
 def get_unified_dataset_sample(limit=100):

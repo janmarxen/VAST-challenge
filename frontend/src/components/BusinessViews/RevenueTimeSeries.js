@@ -6,7 +6,7 @@ import { fetchVenueTimeseries } from '../../utils/api';
  * Venue Time Series Visualization
  * Shows check-in count and spending over time for venues
  */
-function RevenueTimeSeries({ venueId, venueType, startDate, endDate, resolution }) {
+function RevenueTimeSeries({ venueId, venueType, participantId, startDate, endDate, resolution }) {
   const svgRef = useRef();
   const [data, setData] = useState({ timeseries: [], max_occupancy: null });
   const [loading, setLoading] = useState(true);
@@ -17,6 +17,7 @@ function RevenueTimeSeries({ venueId, venueType, startDate, endDate, resolution 
     fetchVenueTimeseries({
       venueId,
       venueType,
+      participantId,
       startDate,
       endDate,
       resolution
@@ -29,7 +30,7 @@ function RevenueTimeSeries({ venueId, venueType, startDate, endDate, resolution 
         console.error('Error fetching venue timeseries:', error);
         setLoading(false);
       });
-  }, [venueId, venueType, startDate, endDate, resolution]);
+  }, [venueId, venueType, participantId, startDate, endDate, resolution]);
 
   useEffect(() => {
     if (!data.timeseries || !data.timeseries.length) return;
