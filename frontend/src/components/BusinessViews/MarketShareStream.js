@@ -6,7 +6,7 @@ import { fetchMarketShare } from '../../utils/api';
  * Market Share Bar/Pie Chart
  * Shows spending distribution by venue
  */
-function MarketShareStream({ venueType, participantId, startDate, endDate }) {
+function MarketShareStream({ venueType, participantId, startDate, endDate, onDataLoaded }) {
   const svgRef = useRef();
   const [data, setData] = useState({ venues: [], total_spending: 0 });
   const [loading, setLoading] = useState(true);
@@ -19,12 +19,16 @@ function MarketShareStream({ venueType, participantId, startDate, endDate }) {
       .then(response => {
         setData(response);
         setLoading(false);
+        // Notify parent of loaded data for KPI calculation
+        if (onDataLoaded) {
+          onDataLoaded(response);
+        }
       })
       .catch(error => {
         console.error('Error fetching market share:', error);
         setLoading(false);
       });
-  }, [venueType, participantId, startDate, endDate]);
+  }, [venueType, participantId, startDate, endDate, onDataLoaded]);
 
   useEffect(() => {
     if (!data.venues || !data.venues.length) return;

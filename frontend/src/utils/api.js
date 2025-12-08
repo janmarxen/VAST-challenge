@@ -39,6 +39,16 @@ export const fetchMarketShare = ({ venueType, participantId, startDate, endDate 
     .then(response => response.data);
 };
 
+export const fetchBusinessTrends = ({ venueType, startDate, endDate } = {}) => {
+  const params = new URLSearchParams();
+  if (venueType) params.append('venue_type', venueType);
+  if (startDate) params.append('start_date', startDate);
+  if (endDate) params.append('end_date', endDate);
+  
+  return axios.get(`${API_BASE_URL}/business/business-trends?${params}`)
+    .then(response => response.data);
+};
+
 export const fetchVenues = () => {
   return axios.get(`${API_BASE_URL}/business/venues`)
     .then(response => response.data);

@@ -447,6 +447,141 @@ def get_participant_list(venue_type=None, venue_id=None):
     return participants
 
 
+def get_business_trends(start_date=None, end_date=None, venue_type=None):
+    """
+    Calculate business trends by comparing first half vs second half of the period.
+    
+    Returns venues with their trend direction (prospering vs struggling),
+    percentage change, and absolute values.
+    """
+    df = build_unified_dataset()
+    
+    # Apply venue type filter
+    if venue_type is not None:
+        df = df[df['venue_type'] == venue_type]
+    
+    # Apply date filters
+    if start_date is not None:
+        start_dt = pd.to_datetime(start_date)
+        if start_dt.tzinfo is None and df['timestamp'].dt.tz is not None:
+            start_dt = start_dt.tz_localize(df['timestamp'].dt.tz)
+        df = df[df['timestamp'] >= start_dt]
+    if end_date is not None:
+        end_dt = pd.to_datetime(end_date)
+        if end_dt.tzinfo is None and df['timestamp'].dt.tz is not None:
+            end_dt = end_dt.tz_localize(df['timestamp'].dt.tz)
+        df = df[df['timestamp'] <= end_dt]
+    
+    if len(df) == 0:
+        return {'venues': [], 'period_info': None}
+    
+    # Calculate the midpoint of the date range
+    min_date = df['timestamp'].min()
+    max_date = df['timestamp'].max()
+    mid_date = min_date + (max_date - min_date) / 2
+    
+    # Split into first half and second half
+    first_half = df[df['timestamp'] < mid_date]
+    second_half = df[df['timestamp'] >= mid_date]
+    
+    # Get venue details for names
+    restaurants = _load_restaurants()
+    pubs = _load_pubs()
+    
+    # Aggregate by venue for each half
+    def aggregate_venues(data):
+        if len(data) == 0:
+            return pd.DataFrame(columns=['venue_id', 'venue_type', 'spending', 'visits'])
+        agg = data.groupby(['venue_id', 'venue_type']).agg({
+            'amount': 'sum',
+            'participant_id': 'count'
+        }).reset_index()
+        agg.columns = ['venue_id', 'venue_type', 'spending', 'visits']
+        return agg
+    
+    first_agg = aggregate_venues(first_half)
+    second_agg = aggregate_venues(second_half)
+    
+    # Merge to compare
+    all_venues = pd.concat([
+        first_agg[['venue_id', 'venue_type']],
+        second_agg[['venue_id', 'venue_type']]
+    ]).drop_duplicates()
+    
+    venues = []
+    for _, row in all_venues.iterrows():
+        venue_id = row['venue_id']
+        venue_type = row['venue_type']
+        
+        # Get first half stats
+        first_row = first_agg[(first_agg['venue_id'] == venue_id) & (first_agg['venue_type'] == venue_type)]
+        first_spending = float(first_row['spending'].iloc[0]) if len(first_row) > 0 else 0
+        first_visits = int(first_row['visits'].iloc[0]) if len(first_row) > 0 else 0
+        
+        # Get second half stats
+        second_row = second_agg[(second_agg['venue_id'] == venue_id) & (second_agg['venue_type'] == venue_type)]
+        second_spending = float(second_row['spending'].iloc[0]) if len(second_row) > 0 else 0
+        second_visits = int(second_row['visits'].iloc[0]) if len(second_row) > 0 else 0
+        
+        # Calculate changes
+        spending_change = second_spending - first_spending
+        visits_change = second_visits - first_visits
+        
+        # Calculate percentage change (avoid division by zero)
+        if first_spending > 0:
+            spending_pct_change = (spending_change / first_spending) * 100
+        else:
+            spending_pct_change = 100 if second_spending > 0 else 0
+            
+        if first_visits > 0:
+            visits_pct_change = (visits_change / first_visits) * 100
+        else:
+            visits_pct_change = 100 if second_visits > 0 else 0
+        
+        # Determine trend: prospering (positive) or struggling (negative)
+        # Use spending as primary indicator
+        trend = 'prospering' if spending_change >= 0 else 'struggling'
+        
+        # Get max occupancy
+        if venue_type == 'Restaurant':
+            capacity_row = restaurants[restaurants['restaurantId'] == venue_id]
+            max_occupancy = int(capacity_row['maxOccupancy'].iloc[0]) if len(capacity_row) > 0 else None
+        else:
+            capacity_row = pubs[pubs['pubId'] == venue_id]
+            max_occupancy = int(capacity_row['maxOccupancy'].iloc[0]) if len(capacity_row) > 0 else None
+        
+        venues.append({
+            'venue_id': int(venue_id),
+            'venue_type': venue_type,
+            'max_occupancy': max_occupancy,
+            'first_half_spending': round(first_spending, 2),
+            'second_half_spending': round(second_spending, 2),
+            'spending_change': round(spending_change, 2),
+            'spending_pct_change': round(spending_pct_change, 1),
+            'first_half_visits': first_visits,
+            'second_half_visits': second_visits,
+            'visits_change': visits_change,
+            'visits_pct_change': round(visits_pct_change, 1),
+            'trend': trend,
+            'total_spending': round(first_spending + second_spending, 2),
+            'total_visits': first_visits + second_visits
+        })
+    
+    # Sort by absolute spending change (most significant changes first)
+    venues.sort(key=lambda x: abs(x['spending_pct_change']), reverse=True)
+    
+    return {
+        'venues': venues,
+        'period_info': {
+            'start_date': min_date.isoformat(),
+            'mid_date': mid_date.isoformat(),
+            'end_date': max_date.isoformat(),
+            'first_half_label': f"{min_date.strftime('%b %d')} - {mid_date.strftime('%b %d')}",
+            'second_half_label': f"{mid_date.strftime('%b %d')} - {max_date.strftime('%b %d')}"
+        }
+    }
+
+
 def get_unified_dataset_sample(limit=100):
     """
     Get a sample of the unified dataset for debugging/exploration.

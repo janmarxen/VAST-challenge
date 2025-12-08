@@ -5,6 +5,7 @@ Handles Restaurant and Pub analysis endpoints.
 Endpoints:
 - GET /api/business/venue-timeseries: Time series data per venue
 - GET /api/business/market-share: Market share distribution
+- GET /api/business/business-trends: Prospering vs struggling businesses
 - GET /api/business/venues: List all venues
 - GET /api/business/unified-dataset: Sample of unified dataset
 """
@@ -14,6 +15,7 @@ import traceback
 from services.business_service import (
     get_venue_timeseries,
     get_market_share_data,
+    get_business_trends,
     get_venue_list,
     get_participant_list,
     get_unified_dataset_sample
@@ -107,6 +109,41 @@ def market_share():
         )
         return jsonify(data), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/business-trends', methods=['GET'])
+def business_trends():
+    """
+    Get business trends comparing first half vs second half of period.
+    
+    Query params:
+    - venue_type: Optional, filter by "Restaurant" or "Pub"
+    - start_date: Optional, filter start date (YYYY-MM-DD)
+    - end_date: Optional, filter end date (YYYY-MM-DD)
+    
+    Returns:
+    - venues: Array of venue trend data with spending/visits changes
+    - period_info: Information about the comparison periods
+    """
+    venue_type = request.args.get('venue_type')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    # Validate venue_type if provided
+    if venue_type and venue_type not in ['Restaurant', 'Pub']:
+        return jsonify({'error': 'venue_type must be "Restaurant" or "Pub"'}), 400
+    
+    try:
+        data = get_business_trends(
+            start_date=start_date,
+            end_date=end_date,
+            venue_type=venue_type
+        )
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"[business_router] ERROR in business-trends: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
