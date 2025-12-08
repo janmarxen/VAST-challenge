@@ -1,0 +1,140 @@
+## Instructions for GitHub Copilot
+
+### Goal
+
+Create **one unified analysis dataset** for Restaurants and Pubs that combines check-in activity, inferred spending, and capacity information. All visualizations must be derived from this dataset only.
+
+---
+
+## 1. Files/Folders to be edited (NO OTHERS)
+
+* backend/routers/business_router.py
+* backend/services/business_service.py
+* tests/test_business_router.py
+components/BusinessViews/
+
+## 1. Input files
+
+Use only the following CSV files:
+
+* `/Journals/CheckinJournal.csv`
+* `/Journals/FinancialJournal.csv`
+* `/Attributes/Restaurants.csv`
+* `/Attributes/Pubs.csv`
+
+---
+
+## 2. Unified dataset schema
+
+Construct **one table** with the following columns:
+
+| column_name    | description                |
+| -------------- | -------------------------- |
+| timestamp      | datetime of the check-in   |
+| participant_id | unique participant id      |
+| venue_id       | restaurantId or pubId      |
+| venue_type     | `"Restaurant"` or `"Pub"`  |
+| amount         | money spent for this visit |
+| max_occupancy  | venue capacity             |
+
+This dataset is the *single source of truth* for all analysis.
+
+---
+
+## 3. Dataset construction steps
+
+### Step 1, Load and filter check-ins
+
+* Load `CheckinJournal.csv`
+* Keep only rows where `venueType ∈ {"Restaurant", "Pub"}`
+* Rename:
+
+  * `participantId → participant_id`
+  * `venueId → venue_id`
+  * `venueType → venue_type`
+* Parse `timestamp` as datetime
+
+---
+
+### Step 2, Load venue capacities
+
+* Load `Restaurants.csv` and `Pubs.csv`
+* Create a mapping:
+
+  * Restaurants: `restaurantId → maxOccupancy`
+  * Pubs: `pubId → maxOccupancy`
+* Add `max_occupancy` to each check-in row based on `venue_id` and `venue_type`
+
+---
+
+### Step 3, Infer spending per check-in
+
+* Load `FinancialJournal.csv`
+* Filter:
+
+  * `category == "Food"` for Restaurants
+  * `category == "Recreation"` for Pubs
+* Rename:
+
+  * `participantId → participant_id`
+* Parse `timestamp` as datetime
+
+**Attribution rule**
+
+* For each check-in, assign the **nearest financial transaction after the check-in** by:
+
+  * same `participant_id`
+  * same inferred venue type
+* Set:
+
+  * `amount = transaction.amount`
+* If no transaction exists, set `amount = 0`
+
+---
+
+### Step 4, Final consistency checks
+
+* One row per check-in.
+* No duplicate rows.
+* Monetary amounts are non-negative.
+* Timestamps are sorted.
+
+---
+
+## 4. Visualization 1, Time series per venue
+
+Using the unified dataset:
+
+* Aggregate by time (user-selectable resolution).
+* Plot:
+
+  * Check-in count over time.
+  * Total amount spent over time.
+* Overlay constant line at `max_occupancy`.
+
+**Interactivity**
+
+* Venue selector.
+* Participant selector.
+* Time range selector.
+
+---
+
+## 5. Visualization 2, Market share
+
+Using the same dataset:
+
+* For a selected time window:
+
+  * Sum `amount` per venue.
+  * Compute percentage share of total spending.
+* Display as bar chart or pie chart.
+
+---
+
+## 6. Assumptions
+
+* Each check-in corresponds to at most one financial transaction.
+* Spending is inferred, not directly recorded.
+* Capacity is time-invariant.
+
