@@ -6,7 +6,7 @@ import { fetchMarketShare } from '../../utils/api';
  * Market Share Bar/Pie Chart
  * Shows spending distribution by venue
  */
-function MarketShareStream({ venueType, venueId, participantId, startDate, endDate, topN, onDataLoaded }) {
+function MarketShareStream({ venueType, venueId, participantId, startDate, endDate, topN, sortBy, hoveredVenue, onHoverVenue, onDataLoaded }) {
   const svgRef = useRef();
   const [data, setData] = useState({ venues: [], total_spending: 0 });
   const [loading, setLoading] = useState(true);
@@ -40,8 +40,17 @@ function MarketShareStream({ venueType, venueId, participantId, startDate, endDa
 
     svg.selectAll('*').remove();
 
-    // Take top N venues
-    const chartData = data.venues.slice(0, topN);
+    // Sort by parent's sortBy criteria first, then take top N
+    let sortedVenues = [...data.venues];
+    if (sortBy === 'total_spending') {
+      sortedVenues.sort((a, b) => b.total_spending - a.total_spending);
+    } else if (sortBy === 'visit_count') {
+      sortedVenues.sort((a, b) => b.visit_count - a.visit_count);
+    }
+    const chartData = sortedVenues.slice(0, topN);
+
+    // Helper to create venue key for cross-chart matching
+    const venueKey = d => `${d.venue_type}-${d.venue_id}`;
 
     // Color scale
     const colorScale = d3.scaleOrdinal()
@@ -78,19 +87,24 @@ function MarketShareStream({ venueType, venueId, participantId, startDate, endDa
         .attr('width', xScale.bandwidth())
         .attr('height', d => innerHeight - yScale(d.percentage))
         .attr('fill', d => d.venue_type === 'Restaurant' ? '#f97316' : '#8b5cf6')
+        .attr('opacity', d => hoveredVenue && hoveredVenue !== venueKey(d) ? 0.3 : 1)
+        .attr('stroke', d => hoveredVenue === venueKey(d) ? '#000' : 'none')
+        .attr('stroke-width', 2)
         .on('mouseover', function(event, d) {
+          if (onHoverVenue) onHoverVenue(venueKey(d));
           d3.select(this).attr('opacity', 0.8);
           tooltip.transition().duration(200).style('opacity', 0.9);
           tooltip.html(`
             <strong>${d.venue_type} #${d.venue_id}</strong><br/>
-            Spending: $${d.total_spending.toFixed(2)}<br/>
+            Total Spending: $${d.total_spending.toFixed(2)}<br/>
             Share: ${d.percentage.toFixed(2)}%<br/>
-            Visits: ${d.visit_count}
+            Total Visits: ${d.visit_count}
           `)
             .style('left', (event.pageX + 10) + 'px')
             .style('top', (event.pageY - 28) + 'px');
         })
         .on('mouseout', function() {
+          if (onHoverVenue) onHoverVenue(null);
           d3.select(this).attr('opacity', 1);
           tooltip.transition().duration(500).style('opacity', 0);
         });
@@ -147,7 +161,9 @@ function MarketShareStream({ venueType, venueId, participantId, startDate, endDa
         .attr('fill', d => d.data.venue_type === 'Restaurant' ? '#f97316' : '#8b5cf6')
         .attr('stroke', 'white')
         .attr('stroke-width', 2)
+        .attr('opacity', d => hoveredVenue && hoveredVenue !== venueKey(d.data) ? 0.3 : 1)
         .on('mouseover', function(event, d) {
+          if (onHoverVenue) onHoverVenue(venueKey(d.data));
           d3.select(this)
             .transition()
             .duration(200)
@@ -155,14 +171,15 @@ function MarketShareStream({ venueType, venueId, participantId, startDate, endDa
           tooltip.transition().duration(200).style('opacity', 0.9);
           tooltip.html(`
             <strong>${d.data.venue_type} #${d.data.venue_id}</strong><br/>
-            Spending: $${d.data.total_spending.toFixed(2)}<br/>
+            Total Spending: $${d.data.total_spending.toFixed(2)}<br/>
             Share: ${d.data.percentage.toFixed(2)}%<br/>
-            Visits: ${d.data.visit_count}
+            Total Visits: ${d.data.visit_count}
           `)
             .style('left', (event.pageX + 10) + 'px')
             .style('top', (event.pageY - 28) + 'px');
         })
         .on('mouseout', function() {
+          if (onHoverVenue) onHoverVenue(null);
           d3.select(this)
             .transition()
             .duration(200)
@@ -195,7 +212,7 @@ function MarketShareStream({ venueType, venueId, participantId, startDate, endDa
     return () => {
       tooltip.remove();
     };
-  }, [data, chartType, topN]);
+  }, [data, chartType, topN, sortBy, hoveredVenue, onHoverVenue]);
 
   if (loading) return <div className="text-center py-8">Loading market share data...</div>;
 

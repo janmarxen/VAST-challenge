@@ -25,6 +25,12 @@ function BusinessDashboard() {
   // Global topN for charts (disabled when single venue selected)
   const [topN, setTopN] = useState(10);
   
+  // Sort by criteria for top N selection
+  const [sortBy, setSortBy] = useState('total_spending'); // 'total_spending' or 'visit_count'
+  
+  // Hovered venue for cross-chart highlighting
+  const [hoveredVenue, setHoveredVenue] = useState(null);
+  
   // Shared data for KPIs - populated by child components via callbacks
   const [marketData, setMarketData] = useState(null);
   const [trendsData, setTrendsData] = useState(null);
@@ -291,8 +297,20 @@ function BusinessDashboard() {
                 onChange={(e) => setMetric(e.target.value)}
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
               >
-                <option value="checkin_count">Check-in Count</option>
+                <option value="checkin_count">Total Visits</option>
                 <option value="total_spending">Total Spending</option>
+              </select>
+            </div>
+            
+            <div className="min-w-[130px]">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Sort Top N By</label>
+              <select 
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+              >
+                <option value="total_spending">Total Spending</option>
+                <option value="visit_count">Total Visits</option>
               </select>
             </div>
             
@@ -369,6 +387,9 @@ function BusinessDashboard() {
               endDate={endDate}
               metric={metric}
               topN={selectedVenue ? 1 : topN}
+              sortBy={sortBy}
+              hoveredVenue={hoveredVenue}
+              onHoverVenue={setHoveredVenue}
               onDataLoaded={handleTrendsDataLoaded}
             />
           </div>
@@ -393,6 +414,9 @@ function BusinessDashboard() {
               startDate={startDate}
               endDate={endDate}
               topN={selectedVenue ? 1 : topN}
+              sortBy={sortBy}
+              hoveredVenue={hoveredVenue}
+              onHoverVenue={setHoveredVenue}
               onDataLoaded={handleMarketDataLoaded}
             />
           </div>
@@ -416,6 +440,9 @@ function BusinessDashboard() {
               startDate={startDate}
               endDate={endDate}
               topN={selectedVenue ? 1 : topN}
+              sortBy={sortBy}
+              hoveredVenue={hoveredVenue}
+              onHoverVenue={setHoveredVenue}
             />
           </div>
         </div>

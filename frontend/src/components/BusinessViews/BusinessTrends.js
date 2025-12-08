@@ -7,11 +7,10 @@ import { fetchBusinessTrends } from '../../utils/api';
  * Shows which businesses are prospering (↑ green) vs struggling (↓ red)
  * Uses arrows and color encoding to clearly indicate trends
  */
-function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, onDataLoaded }) {
+function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, sortBy, hoveredVenue, onHoverVenue, onDataLoaded }) {
   const svgRef = useRef();
   const [data, setData] = useState({ venues: [], period_info: null });
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState('change'); // 'change', 'spending', 'visits'
 
   useEffect(() => {
     setLoading(true);
@@ -50,26 +49,29 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
 
     svg.selectAll('*').remove();
 
-    // Sort venues based on selection
+    // First sort by parent's sortBy to get consistent top N across charts
     let sortedVenues = [...data.venues];
-    if (sortBy === 'change') {
-      // Use metric to determine sort field
-      const changeField = metric === 'checkin_count' ? 'visits_pct_change' : 'spending_pct_change';
-      sortedVenues.sort((a, b) => (b[changeField] || b.spending_pct_change) - (a[changeField] || a.spending_pct_change));
-    } else if (sortBy === 'spending') {
+    if (sortBy === 'total_spending') {
       sortedVenues.sort((a, b) => b.total_spending - a.total_spending);
-    } else if (sortBy === 'visits') {
+    } else if (sortBy === 'visit_count') {
       sortedVenues.sort((a, b) => b.total_visits - a.total_visits);
     }
 
     // Take top N venues (prop from parent)
-    const displayVenues = sortedVenues.slice(0, topN || 15);
+    let displayVenues = sortedVenues.slice(0, topN || 15);
+    
+    // Then sort display by trend change (based on metric)
+    const changeField = metric === 'checkin_count' ? 'visits_pct_change' : 'spending_pct_change';
+    displayVenues.sort((a, b) => (b[changeField] || 0) - (a[changeField] || 0));
 
     const g = svg.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    // Color scale: green for prospering, red for struggling
-    const colorScale = d => d.trend === 'prospering' ? '#10b981' : '#ef4444';
+    // Color scale: green for prospering, red for struggling  
+    // Determine trend based on metric
+    const getChange = d => metric === 'checkin_count' ? (d.visits_pct_change || 0) : (d.spending_pct_change || 0);
+    const getTrend = d => getChange(d) >= 0 ? 'prospering' : 'struggling';
+    const colorScale = d => getTrend(d) === 'prospering' ? '#10b981' : '#ef4444';
 
     // Y scale for venues
     const yScale = d3.scaleBand()
@@ -79,8 +81,8 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
 
     // X scale for percentage change (centered at 0)
     const maxChange = Math.max(
-      Math.abs(d3.min(displayVenues, d => d.spending_pct_change)),
-      Math.abs(d3.max(displayVenues, d => d.spending_pct_change)),
+      Math.abs(d3.min(displayVenues, d => getChange(d))),
+      Math.abs(d3.max(displayVenues, d => getChange(d))),
       10 // minimum range
     );
     
@@ -140,44 +142,54 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
       .append('g')
       .attr('class', 'trend-bar');
 
+    // Helper to create venue key for cross-chart matching
+    const venueKey = d => `${d.venue_type}-${d.venue_id}`;
+
     // Bar from center to value
     bars.append('rect')
-      .attr('x', d => d.spending_pct_change >= 0 ? xScale(0) : xScale(d.spending_pct_change))
+      .attr('class', 'trend-rect')
+      .attr('x', d => getChange(d) >= 0 ? xScale(0) : xScale(getChange(d)))
       .attr('y', d => yScale(`${d.venue_type[0]}#${d.venue_id}`))
-      .attr('width', d => Math.abs(xScale(d.spending_pct_change) - xScale(0)))
+      .attr('width', d => Math.abs(xScale(getChange(d)) - xScale(0)))
       .attr('height', yScale.bandwidth())
       .attr('fill', colorScale)
-      .attr('opacity', 0.8)
-      .attr('rx', 3);
+      .attr('opacity', d => hoveredVenue && hoveredVenue !== venueKey(d) ? 0.3 : 0.8)
+      .attr('rx', 3)
+      .attr('stroke', d => hoveredVenue === venueKey(d) ? '#000' : 'none')
+      .attr('stroke-width', 2);
 
     // Add percentage labels
     bars.append('text')
       .attr('x', d => {
-        const barEnd = d.spending_pct_change >= 0 
-          ? xScale(0) + Math.abs(xScale(d.spending_pct_change) - xScale(0))
-          : xScale(d.spending_pct_change);
+        const change = getChange(d);
+        const barEnd = change >= 0 
+          ? xScale(0) + Math.abs(xScale(change) - xScale(0))
+          : xScale(change);
         // Position inside bar if it's wide enough, otherwise outside
-        const barWidth = Math.abs(xScale(d.spending_pct_change) - xScale(0));
+        const barWidth = Math.abs(xScale(change) - xScale(0));
         if (barWidth > 40) {
-          return d.spending_pct_change >= 0 ? barEnd - 5 : barEnd + 5;
+          return change >= 0 ? barEnd - 5 : barEnd + 5;
         }
-        return d.spending_pct_change >= 0 ? barEnd + 5 : barEnd - 5;
+        return change >= 0 ? barEnd + 5 : barEnd - 5;
       })
       .attr('y', d => yScale(`${d.venue_type[0]}#${d.venue_id}`) + yScale.bandwidth() / 2 + 4)
       .attr('text-anchor', d => {
-        const barWidth = Math.abs(xScale(d.spending_pct_change) - xScale(0));
+        const barWidth = Math.abs(xScale(getChange(d)) - xScale(0));
         if (barWidth > 40) {
-          return d.spending_pct_change >= 0 ? 'end' : 'start';
+          return getChange(d) >= 0 ? 'end' : 'start';
         }
-        return d.spending_pct_change >= 0 ? 'start' : 'end';
+        return getChange(d) >= 0 ? 'start' : 'end';
       })
       .attr('font-size', '11px')
       .attr('font-weight', 'bold')
       .attr('fill', d => {
-        const barWidth = Math.abs(xScale(d.spending_pct_change) - xScale(0));
+        const barWidth = Math.abs(xScale(getChange(d)) - xScale(0));
         return barWidth > 40 ? '#fff' : colorScale(d);
       })
-      .text(d => `${d.spending_pct_change > 0 ? '+' : ''}${d.spending_pct_change.toFixed(1)}%`);
+      .text(d => {
+        const change = getChange(d);
+        return `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
+      });
 
     // Y axis (venue labels)
     g.append('g')
@@ -193,13 +205,14 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
       .attr('font-size', '10px');
 
     // X axis label
+    const axisLabel = metric === 'checkin_count' ? 'Visits Change (%)' : 'Spending Change (%)';
     g.append('text')
       .attr('x', innerWidth / 2)
       .attr('y', innerHeight + 40)
       .attr('text-anchor', 'middle')
       .attr('font-size', '12px')
       .attr('fill', '#666')
-      .text('Revenue Change (%)');
+      .text(axisLabel);
 
     // Add tooltip
     const tooltip = d3.select('body').append('div')
@@ -215,6 +228,7 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
       .style('z-index', 1000);
 
     bars.on('mouseover', (event, d) => {
+      if (onHoverVenue) onHoverVenue(venueKey(d));
       tooltip
         .style('opacity', 1)
         .html(`
@@ -242,6 +256,7 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
         .style('top', (event.pageY - 10) + 'px');
     })
     .on('mouseout', () => {
+      if (onHoverVenue) onHoverVenue(null);
       tooltip.style('opacity', 0);
     });
 
@@ -250,7 +265,7 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
       d3.selectAll('.business-trend-tooltip').remove();
     };
 
-  }, [data, sortBy, metric, topN]);
+  }, [data, sortBy, metric, topN, hoveredVenue, onHoverVenue]);
 
   if (loading) {
     return <div className="flex items-center justify-center h-64">Loading trends...</div>;
@@ -260,16 +275,18 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
     return <div className="flex items-center justify-center h-64 text-gray-500">No data available</div>;
   }
 
-  // Summary stats
-  const prosperingCount = data.venues.filter(v => v.trend === 'prospering').length;
-  const strugglingCount = data.venues.filter(v => v.trend === 'struggling').length;
+  // Summary stats based on selected metric
+  const getChangeValue = v => metric === 'checkin_count' ? (v.visits_pct_change || 0) : (v.spending_pct_change || 0);
+  const prosperingCount = data.venues.filter(v => getChangeValue(v) >= 0).length;
+  const strugglingCount = data.venues.filter(v => getChangeValue(v) < 0).length;
+  const metricLabel = metric === 'checkin_count' ? 'visits' : 'spending';
 
   return (
     <div>
       {/* Period info and summary */}
       {data.period_info && (
         <div className="mb-2 text-sm text-gray-600">
-          Comparing: <strong>{data.period_info.first_half_label}</strong> vs <strong>{data.period_info.second_half_label}</strong>
+          Comparing {metricLabel}: <strong>{data.period_info.first_half_label}</strong> vs <strong>{data.period_info.second_half_label}</strong>
           <span className="ml-4">
             <span className="text-green-600 font-semibold">{prosperingCount} prospering</span>
             {' | '}
@@ -277,20 +294,6 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
           </span>
         </div>
       )}
-      
-      {/* Sort control */}
-      <div className="mb-2">
-        <label className="text-sm mr-2">Sort by:</label>
-        <select 
-          value={sortBy} 
-          onChange={(e) => setSortBy(e.target.value)}
-          className="text-sm border rounded px-2 py-1"
-        >
-          <option value="change">Trend (% Change)</option>
-          <option value="spending">Total Revenue</option>
-          <option value="visits">Total Visits</option>
-        </select>
-      </div>
 
       <svg ref={svgRef}></svg>
     </div>

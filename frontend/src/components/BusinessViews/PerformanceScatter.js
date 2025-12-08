@@ -6,7 +6,7 @@ import { fetchMarketShare } from '../../utils/api';
  * Performance Scatter Plot
  * Shows venue performance comparison: visits vs spending
  */
-function PerformanceScatter({ venueType, venueId, participantId, startDate, endDate, topN }) {
+function PerformanceScatter({ venueType, venueId, participantId, startDate, endDate, topN, sortBy, hoveredVenue, onHoverVenue }) {
   const svgRef = useRef();
   const [data, setData] = useState({ venues: [] });
   const [loading, setLoading] = useState(true);
@@ -39,8 +39,17 @@ function PerformanceScatter({ venueType, venueId, participantId, startDate, endD
 
     svg.selectAll('*').remove();
 
-    // Apply topN filtering
-    const chartVenues = data.venues.slice(0, topN || data.venues.length);
+    // Sort by parent's sortBy criteria first, then take top N
+    let sortedVenues = [...data.venues];
+    if (sortBy === 'total_spending') {
+      sortedVenues.sort((a, b) => b.total_spending - a.total_spending);
+    } else if (sortBy === 'visit_count') {
+      sortedVenues.sort((a, b) => b.visit_count - a.visit_count);
+    }
+    const chartVenues = sortedVenues.slice(0, topN || data.venues.length);
+
+    // Helper to create venue key for cross-chart matching
+    const venueKey = d => `${d.venue_type}-${d.venue_id}`;
 
     const g = svg.append('g')
       .attr('transform', `translate(${margin.left},${margin.top})`);
@@ -80,9 +89,9 @@ function PerformanceScatter({ venueType, venueId, participantId, startDate, endD
       .attr('cy', d => yScale(d.total_spending))
       .attr('r', d => sizeScale(d.percentage))
       .attr('fill', d => d.venue_type === 'Restaurant' ? '#f97316' : '#8b5cf6')
-      .attr('opacity', 0.7)
-      .attr('stroke', 'white')
-      .attr('stroke-width', 1);
+      .attr('opacity', d => hoveredVenue && hoveredVenue !== venueKey(d) ? 0.2 : 0.7)
+      .attr('stroke', d => hoveredVenue === venueKey(d) ? '#000' : 'white')
+      .attr('stroke-width', d => hoveredVenue === venueKey(d) ? 3 : 1);
 
     // Tooltip
     const tooltip = d3.select('body').append('div')
@@ -97,6 +106,7 @@ function PerformanceScatter({ venueType, venueId, participantId, startDate, endD
       .style('z-index', 1000);
 
     circles.on('mouseover', function(event, d) {
+      if (onHoverVenue) onHoverVenue(venueKey(d));
       d3.select(this)
         .attr('opacity', 1)
         .attr('stroke', '#333')
@@ -104,7 +114,7 @@ function PerformanceScatter({ venueType, venueId, participantId, startDate, endD
       tooltip.transition().duration(200).style('opacity', 0.9);
       tooltip.html(`
         <strong>${d.venue_type} #${d.venue_id}</strong><br/>
-        Visits: ${d.visit_count}<br/>
+        Total Visits: ${d.visit_count}<br/>
         Total Spending: $${d.total_spending.toFixed(2)}<br/>
         Market Share: ${d.percentage.toFixed(2)}%<br/>
         Avg per Visit: $${(d.total_spending / d.visit_count).toFixed(2)}
@@ -113,6 +123,7 @@ function PerformanceScatter({ venueType, venueId, participantId, startDate, endD
         .style('top', (event.pageY - 28) + 'px');
     })
     .on('mouseout', function() {
+      if (onHoverVenue) onHoverVenue(null);
       d3.select(this)
         .attr('opacity', 0.7)
         .attr('stroke', 'white')
@@ -132,7 +143,7 @@ function PerformanceScatter({ venueType, venueId, participantId, startDate, endD
       .attr('text-anchor', 'middle')
       .attr('fill', '#666')
       .attr('font-size', '12px')
-      .text('Number of Visits');
+      .text('Total Visits');
 
     // Y Axis
     g.append('g')
@@ -151,7 +162,7 @@ function PerformanceScatter({ venueType, venueId, participantId, startDate, endD
     return () => {
       tooltip.remove();
     };
-  }, [data, topN]);
+  }, [data, topN, sortBy, hoveredVenue, onHoverVenue]);
 
   if (loading) return <div className="text-center py-8">Loading performance data...</div>;
 
