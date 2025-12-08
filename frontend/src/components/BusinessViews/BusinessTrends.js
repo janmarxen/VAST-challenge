@@ -7,7 +7,7 @@ import { fetchBusinessTrends } from '../../utils/api';
  * Shows which businesses are prospering (↑ green) vs struggling (↓ red)
  * Uses arrows and color encoding to clearly indicate trends
  */
-function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, sortBy, hoveredVenue, onHoverVenue, onDataLoaded }) {
+function BusinessTrends({ venueType, venueId, participantId, startDate, endDate, metric, topN, sortBy, hoveredVenue, onHoverVenue, onDataLoaded }) {
   const svgRef = useRef();
   const [data, setData] = useState({ venues: [], period_info: null });
   const [loading, setLoading] = useState(true);
@@ -17,6 +17,7 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
     fetchBusinessTrends({
       venueType,
       venueId,
+      participantId,
       startDate,
       endDate
     })
@@ -32,7 +33,7 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
         console.error('Error fetching business trends:', error);
         setLoading(false);
       });
-  }, [venueType, venueId, startDate, endDate, onDataLoaded]);
+  }, [venueType, venueId, participantId, startDate, endDate, onDataLoaded]);
 
   useEffect(() => {
     if (!data.venues || !data.venues.length) return;

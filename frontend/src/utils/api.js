@@ -40,10 +40,11 @@ export const fetchMarketShare = ({ venueType, venueId, participantId, startDate,
     .then(response => response.data);
 };
 
-export const fetchBusinessTrends = ({ venueType, venueId, startDate, endDate } = {}) => {
+export const fetchBusinessTrends = ({ venueType, venueId, participantId, startDate, endDate } = {}) => {
   const params = new URLSearchParams();
   if (venueType) params.append('venue_type', venueType);
   if (venueId) params.append('venue_id', venueId);
+  if (participantId) params.append('participant_id', participantId);
   if (startDate) params.append('start_date', startDate);
   if (endDate) params.append('end_date', endDate);
   

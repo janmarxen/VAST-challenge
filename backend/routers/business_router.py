@@ -123,6 +123,7 @@ def business_trends():
     Query params:
     - venue_type: Optional, filter by "Restaurant" or "Pub"
     - venue_id: Optional, filter by specific venue
+    - participant_id: Optional, filter by participant
     - start_date: Optional, filter start date (YYYY-MM-DD)
     - end_date: Optional, filter end date (YYYY-MM-DD)
     
@@ -132,6 +133,7 @@ def business_trends():
     """
     venue_type = request.args.get('venue_type')
     venue_id = request.args.get('venue_id', type=int)
+    participant_id = request.args.get('participant_id', type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
@@ -144,7 +146,8 @@ def business_trends():
             start_date=start_date,
             end_date=end_date,
             venue_type=venue_type,
-            venue_id=venue_id
+            venue_id=venue_id,
+            participant_id=participant_id
         )
         return jsonify(data), 200
     except Exception as e:

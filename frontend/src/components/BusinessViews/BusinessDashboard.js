@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import RevenueTimeSeries from './RevenueTimeSeries';
 import MarketShareStream from './MarketShareStream';
 import PerformanceScatter from './PerformanceScatter';
@@ -28,8 +28,33 @@ function BusinessDashboard() {
   // Sort by criteria for top N selection
   const [sortBy, setSortBy] = useState('total_spending'); // 'total_spending' or 'visit_count'
   
-  // Hovered venue for cross-chart highlighting
+  // Hovered venue for cross-chart highlighting (debounced for performance)
   const [hoveredVenue, setHoveredVenue] = useState(null);
+  const hoverTimeoutRef = useRef(null);
+  
+  // Debounced hover handler to reduce re-renders
+  const handleHoverVenue = useCallback((venue) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    if (venue === null) {
+      // Delay clearing to prevent flicker when moving between elements
+      hoverTimeoutRef.current = setTimeout(() => {
+        setHoveredVenue(null);
+      }, 50);
+    } else {
+      setHoveredVenue(venue);
+    }
+  }, []);
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
   
   // Shared data for KPIs - populated by child components via callbacks
   const [marketData, setMarketData] = useState(null);
@@ -214,8 +239,10 @@ function BusinessDashboard() {
             </svg>
             <span className="text-sm font-semibold text-gray-700">Filters</span>
           </div>
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-[140px]">
+          
+          {/* Row 1: Entity Filters */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Venue Type</label>
               <select 
                 value={selectedVenueType}
@@ -231,7 +258,7 @@ function BusinessDashboard() {
               </select>
             </div>
             
-            <div className="flex-1 min-w-[180px]">
+            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Venue</label>
               <select 
                 value={selectedVenue || ''}
@@ -250,7 +277,7 @@ function BusinessDashboard() {
               </select>
             </div>
             
-            <div className="flex-1 min-w-[180px]">
+            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Customer</label>
               <select 
                 value={selectedParticipant || ''}
@@ -270,27 +297,7 @@ function BusinessDashboard() {
               </select>
             </div>
             
-            <div className="min-w-[130px]">
-              <label className="block text-xs font-medium text-gray-500 mb-1">Start Date</label>
-              <input 
-                type="date" 
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
-              />
-            </div>
-            
-            <div className="min-w-[130px]">
-              <label className="block text-xs font-medium text-gray-500 mb-1">End Date</label>
-              <input 
-                type="date" 
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
-              />
-            </div>
-            
-            <div className="min-w-[130px]">
+            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Metric</label>
               <select 
                 value={metric}
@@ -301,8 +308,31 @@ function BusinessDashboard() {
                 <option value="total_spending">Total Spending</option>
               </select>
             </div>
+          </div>
+          
+          {/* Row 2: Date & Analysis Filters */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Start Date</label>
+              <input 
+                type="date" 
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+              />
+            </div>
             
-            <div className="min-w-[130px]">
+            <div>
+              <label className="block text-xs font-medium text-gray-500 mb-1">End Date</label>
+              <input 
+                type="date" 
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+              />
+            </div>
+            
+            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Sort Top N By</label>
               <select 
                 value={sortBy}
@@ -314,7 +344,7 @@ function BusinessDashboard() {
               </select>
             </div>
             
-            <div className="min-w-[100px]">
+            <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Top N Venues</label>
               <input
                 type="number"
@@ -383,13 +413,14 @@ function BusinessDashboard() {
             <BusinessTrends 
               venueType={selectedVenueType}
               venueId={selectedVenue}
+              participantId={selectedParticipant}
               startDate={startDate}
               endDate={endDate}
               metric={metric}
               topN={selectedVenue ? 1 : topN}
               sortBy={sortBy}
               hoveredVenue={hoveredVenue}
-              onHoverVenue={setHoveredVenue}
+              onHoverVenue={handleHoverVenue}
               onDataLoaded={handleTrendsDataLoaded}
             />
           </div>
@@ -416,7 +447,7 @@ function BusinessDashboard() {
               topN={selectedVenue ? 1 : topN}
               sortBy={sortBy}
               hoveredVenue={hoveredVenue}
-              onHoverVenue={setHoveredVenue}
+              onHoverVenue={handleHoverVenue}
               onDataLoaded={handleMarketDataLoaded}
             />
           </div>
@@ -442,7 +473,7 @@ function BusinessDashboard() {
               topN={selectedVenue ? 1 : topN}
               sortBy={sortBy}
               hoveredVenue={hoveredVenue}
-              onHoverVenue={setHoveredVenue}
+              onHoverVenue={handleHoverVenue}
             />
           </div>
         </div>
