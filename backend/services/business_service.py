@@ -11,10 +11,24 @@ from pathlib import Path
 from functools import lru_cache
 import os
 
-# Path to raw data files
-DATA_DIR = Path(__file__).parent.parent.parent / "data" / "raw"
-CACHE_DIR = Path(__file__).parent.parent.parent / "data" / "processed"
+# Path to raw data files - handle both Docker and local environments
+# In Docker: backend is at /app, data is mounted at /app/data
+# Locally: backend is at ./backend, data is at ./data
+_APP_DIR = Path(__file__).parent.parent  # /app or ./backend
+_DATA_BASE = _APP_DIR / "data"  # /app/data or ./backend/data
+
+# Fallback for local development where data is at project root level
+if not _DATA_BASE.exists():
+    _DATA_BASE = _APP_DIR.parent / "data"  # ./data (project root)
+
+DATA_DIR = _DATA_BASE / "raw"
+CACHE_DIR = _DATA_BASE / "processed"
 UNIFIED_CACHE_FILE = CACHE_DIR / "unified_business_dataset.parquet"
+
+print(f"[business_service] DATA_DIR resolved to: {DATA_DIR}")
+print(f"[business_service] CACHE_DIR resolved to: {CACHE_DIR}")
+print(f"[business_service] DATA_DIR exists: {DATA_DIR.exists()}")
+print(f"[business_service] CACHE_DIR exists: {CACHE_DIR.exists()}")
 
 
 @lru_cache(maxsize=1)
@@ -59,11 +73,17 @@ def _load_pubs():
 
 def _load_cached_unified_dataset():
     """Try to load the unified dataset from cache."""
+    print(f"[business_service] Checking for cache file at {UNIFIED_CACHE_FILE}")
+    print(f"[business_service] Cache file exists: {UNIFIED_CACHE_FILE.exists()}")
     if UNIFIED_CACHE_FILE.exists():
-        print(f"[business_service] Loading cached unified dataset from {UNIFIED_CACHE_FILE}...")
-        df = pd.read_parquet(UNIFIED_CACHE_FILE)
-        print(f"[business_service] Loaded {len(df)} records from cache")
-        return df
+        try:
+            print(f"[business_service] Loading cached unified dataset from {UNIFIED_CACHE_FILE}...")
+            df = pd.read_parquet(UNIFIED_CACHE_FILE)
+            print(f"[business_service] Loaded {len(df)} records from cache")
+            return df
+        except Exception as e:
+            print(f"[business_service] ERROR loading cache: {e}")
+            return None
     return None
 
 

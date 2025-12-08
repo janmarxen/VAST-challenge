@@ -10,6 +10,7 @@ Endpoints:
 """
 from flask import Blueprint, jsonify, request
 import pandas as pd
+import traceback
 from services.business_service import (
     get_venue_timeseries,
     get_market_share_data,
@@ -44,6 +45,8 @@ def venue_timeseries():
     end_date = request.args.get('end_date')
     resolution = request.args.get('resolution', default='day')
     
+    print(f"[business_router] venue-timeseries request: venue_id={venue_id}, venue_type={venue_type}, start={start_date}, end={end_date}, resolution={resolution}")
+    
     # Validate venue_type if provided
     if venue_type and venue_type not in ['Restaurant', 'Pub']:
         return jsonify({'error': 'venue_type must be "Restaurant" or "Pub"'}), 400
@@ -62,8 +65,11 @@ def venue_timeseries():
             end_date=end_date,
             resolution=resolution
         )
+        print(f"[business_router] venue-timeseries response: {len(data.get('timeseries', []))} data points")
         return jsonify(data), 200
     except Exception as e:
+        print(f"[business_router] ERROR in venue-timeseries: {e}")
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
