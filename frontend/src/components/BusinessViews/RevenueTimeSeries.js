@@ -95,26 +95,6 @@ function RevenueTimeSeries({ venueId, venueType, participantId, startDate, endDa
       .attr('stroke-width', 2)
       .attr('d', line);
 
-    // Add max occupancy line if available and showing check-in count
-    if (data.max_occupancy && metric === 'checkin_count') {
-      g.append('line')
-        .attr('x1', 0)
-        .attr('x2', innerWidth)
-        .attr('y1', yScale(data.max_occupancy))
-        .attr('y2', yScale(data.max_occupancy))
-        .attr('stroke', '#ef4444')
-        .attr('stroke-width', 2)
-        .attr('stroke-dasharray', '5,5');
-
-      g.append('text')
-        .attr('x', innerWidth - 5)
-        .attr('y', yScale(data.max_occupancy) - 5)
-        .attr('text-anchor', 'end')
-        .attr('fill', '#ef4444')
-        .attr('font-size', '12px')
-        .text(`Max Capacity: ${data.max_occupancy}`);
-    }
-
     // X Axis
     g.append('g')
       .attr('transform', `translate(0,${innerHeight})`)

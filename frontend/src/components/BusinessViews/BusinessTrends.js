@@ -70,9 +70,6 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
 
     // Color scale: green for prospering, red for struggling
     const colorScale = d => d.trend === 'prospering' ? '#10b981' : '#ef4444';
-    
-    // Secondary color (lighter) for Pub vs Restaurant distinction
-    const typeColor = d => d.venue_type === 'Restaurant' ? '#3b82f6' : '#8b5cf6';
 
     // Y scale for venues
     const yScale = d3.scaleBand()
@@ -153,26 +150,6 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
       .attr('opacity', 0.8)
       .attr('rx', 3);
 
-    // Add venue type indicator (small colored dot)
-    bars.append('circle')
-      .attr('cx', d => d.spending_pct_change >= 0 
-        ? xScale(0) + Math.abs(xScale(d.spending_pct_change) - xScale(0)) + 8
-        : xScale(d.spending_pct_change) - 8)
-      .attr('cy', d => yScale(`${d.venue_type[0]}#${d.venue_id}`) + yScale.bandwidth() / 2)
-      .attr('r', 5)
-      .attr('fill', typeColor);
-
-    // Add arrows
-    bars.append('text')
-      .attr('x', d => d.spending_pct_change >= 0 
-        ? xScale(0) + Math.abs(xScale(d.spending_pct_change) - xScale(0)) + 20
-        : xScale(d.spending_pct_change) - 20)
-      .attr('y', d => yScale(`${d.venue_type[0]}#${d.venue_id}`) + yScale.bandwidth() / 2 + 5)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '16px')
-      .attr('fill', colorScale)
-      .text(d => d.trend === 'prospering' ? '▲' : '▼');
-
     // Add percentage labels
     bars.append('text')
       .attr('x', d => {
@@ -184,7 +161,7 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
         if (barWidth > 40) {
           return d.spending_pct_change >= 0 ? barEnd - 5 : barEnd + 5;
         }
-        return d.spending_pct_change >= 0 ? barEnd + 35 : barEnd - 35;
+        return d.spending_pct_change >= 0 ? barEnd + 5 : barEnd - 5;
       })
       .attr('y', d => yScale(`${d.venue_type[0]}#${d.venue_id}`) + yScale.bandwidth() / 2 + 4)
       .attr('text-anchor', d => {
@@ -192,7 +169,7 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
         if (barWidth > 40) {
           return d.spending_pct_change >= 0 ? 'end' : 'start';
         }
-        return 'middle';
+        return d.spending_pct_change >= 0 ? 'start' : 'end';
       })
       .attr('font-size', '11px')
       .attr('font-weight', 'bold')
@@ -224,34 +201,6 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
       .attr('fill', '#666')
       .text('Revenue Change (%)');
 
-    // Legend
-    const legend = svg.append('g')
-      .attr('transform', `translate(${width - 100}, ${margin.top})`);
-
-    // Restaurant indicator
-    legend.append('circle')
-      .attr('cx', 0)
-      .attr('cy', 0)
-      .attr('r', 5)
-      .attr('fill', '#3b82f6');
-    legend.append('text')
-      .attr('x', 10)
-      .attr('y', 4)
-      .attr('font-size', '10px')
-      .text('Restaurant');
-
-    // Pub indicator
-    legend.append('circle')
-      .attr('cx', 0)
-      .attr('cy', 15)
-      .attr('r', 5)
-      .attr('fill', '#8b5cf6');
-    legend.append('text')
-      .attr('x', 10)
-      .attr('y', 19)
-      .attr('font-size', '10px')
-      .text('Pub');
-
     // Add tooltip
     const tooltip = d3.select('body').append('div')
       .attr('class', 'business-trend-tooltip')
@@ -271,7 +220,7 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
         .html(`
           <strong>${d.venue_type} #${d.venue_id}</strong><br/>
           <span style="color: ${colorScale(d)}; font-weight: bold;">
-            ${d.trend === 'prospering' ? '▲ Prospering' : '▼ Struggling'}
+            ${d.trend === 'prospering' ? 'Prospering' : 'Struggling'}
           </span><br/>
           <hr style="margin: 5px 0"/>
           <strong>Revenue:</strong> $${d.total_spending.toLocaleString()}<br/>
@@ -322,9 +271,9 @@ function BusinessTrends({ venueType, venueId, startDate, endDate, metric, topN, 
         <div className="mb-2 text-sm text-gray-600">
           Comparing: <strong>{data.period_info.first_half_label}</strong> vs <strong>{data.period_info.second_half_label}</strong>
           <span className="ml-4">
-            <span className="text-green-600 font-semibold">▲ {prosperingCount} prospering</span>
+            <span className="text-green-600 font-semibold">{prosperingCount} prospering</span>
             {' | '}
-            <span className="text-red-600 font-semibold">▼ {strugglingCount} struggling</span>
+            <span className="text-red-600 font-semibold">{strugglingCount} struggling</span>
           </span>
         </div>
       )}

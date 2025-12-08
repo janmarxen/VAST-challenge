@@ -77,7 +77,7 @@ function MarketShareStream({ venueType, venueId, participantId, startDate, endDa
         .attr('y', d => yScale(d.percentage))
         .attr('width', xScale.bandwidth())
         .attr('height', d => innerHeight - yScale(d.percentage))
-        .attr('fill', d => d.venue_type === 'Restaurant' ? '#3b82f6' : '#8b5cf6')
+        .attr('fill', d => d.venue_type === 'Restaurant' ? '#f97316' : '#8b5cf6')
         .on('mouseover', function(event, d) {
           d3.select(this).attr('opacity', 0.8);
           tooltip.transition().duration(200).style('opacity', 0.9);
@@ -144,7 +144,7 @@ function MarketShareStream({ venueType, venueId, participantId, startDate, endDa
 
       slices.append('path')
         .attr('d', arc)
-        .attr('fill', d => d.data.venue_type === 'Restaurant' ? '#3b82f6' : '#8b5cf6')
+        .attr('fill', d => d.data.venue_type === 'Restaurant' ? '#f97316' : '#8b5cf6')
         .attr('stroke', 'white')
         .attr('stroke-width', 2)
         .on('mouseover', function(event, d) {

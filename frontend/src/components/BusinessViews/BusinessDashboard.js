@@ -316,7 +316,7 @@ function BusinessDashboard() {
           <div className="flex items-center justify-center gap-6 text-sm">
             <span className="text-gray-600 font-medium">Venue Type:</span>
             <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+              <span className="w-3 h-3 rounded-full bg-orange-500"></span>
               <span className="text-gray-700">Restaurant</span>
             </div>
             <div className="flex items-center gap-1.5">

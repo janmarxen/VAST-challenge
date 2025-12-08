@@ -27,9 +27,9 @@ function PerformanceScatter({ venueType, venueId, participantId, startDate, endD
   useEffect(() => {
     if (!data.venues || !data.venues.length) return;
 
-    const width = 800;
-    const height = 350;
-    const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+    const width = 550;
+    const height = 320;
+    const margin = { top: 20, right: 20, bottom: 50, left: 60 };
     const innerWidth = width - margin.left - margin.right;
     const innerHeight = height - margin.top - margin.bottom;
 
@@ -79,7 +79,7 @@ function PerformanceScatter({ venueType, venueId, participantId, startDate, endD
       .attr('cx', d => xScale(d.visit_count))
       .attr('cy', d => yScale(d.total_spending))
       .attr('r', d => sizeScale(d.percentage))
-      .attr('fill', d => d.venue_type === 'Restaurant' ? '#3b82f6' : '#8b5cf6')
+      .attr('fill', d => d.venue_type === 'Restaurant' ? '#f97316' : '#8b5cf6')
       .attr('opacity', 0.7)
       .attr('stroke', 'white')
       .attr('stroke-width', 1);
