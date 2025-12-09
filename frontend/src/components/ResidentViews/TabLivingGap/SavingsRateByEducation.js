@@ -28,24 +28,12 @@ const SavingsRateByEducation = ({ selectedMonth }) => {
 
   if (!eduStats || eduStats.length === 0) return <div className="text-gray-400 italic">No data for this month</div>;
 
-  // Preferred display order for education levels (use canonical keys from dataset)
-  // Use keys when possible to avoid mismatches between label text and expected order.
-  const preferredOrderKeys = ['Graduate', 'Bachelor', 'HighSchoolOrCollege', 'Low'];
+  // Define custom order for education levels
+  const ORDER = ['Graduate', 'Bachelors', 'HighSchoolOrCollege', 'Low'];
 
-  // Attach display label and sort primarily by canonical key order, falling back to label
-  const labeledStats = eduStats.map(s => ({ ...s, displayLabel: decodeLabel(s.educationLevel) }));
-  labeledStats.sort((a, b) => {
-    const ai = preferredOrderKeys.indexOf(a.educationLevel);
-    const bi = preferredOrderKeys.indexOf(b.educationLevel);
-    const aIn = ai !== -1;
-    const bIn = bi !== -1;
-    if (aIn || bIn) {
-      const aval = aIn ? ai : Number.POSITIVE_INFINITY;
-      const bval = bIn ? bi : Number.POSITIVE_INFINITY;
-      return aval - bval;
-    }
-    // If neither key is in preferred list, sort by the human-friendly label
-    return a.displayLabel.localeCompare(b.displayLabel);
+  // Sort stats based on the defined order
+  const sortedStats = [...eduStats].sort((a, b) => {
+    return ORDER.indexOf(a.educationLevel) - ORDER.indexOf(b.educationLevel);
   });
 
   // Clamp savings rate to [0, 1] for scale
@@ -55,16 +43,23 @@ const SavingsRateByEducation = ({ selectedMonth }) => {
     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 h-full">
       <h3 className="font-bold text-lg mb-4 text-gray-800">Savings Rate by Education</h3>
       <div className="space-y-5">
-        {labeledStats.map(stat => {
+        {sortedStats.map(stat => {
           const rate = clampRate(stat.SavingsRate) * 100;
           const color = rate < 0 ? 'bg-red-500' : 'bg-green-500';
           // Scale: 0–100% maps to full bar width
           const barWidth = rate;
           const leftPos = 0;
+          
+          // Custom label handling
+          let label = decodeLabel(stat.educationLevel);
+          if (stat.educationLevel === 'HighSchoolOrCollege') {
+            label = 'High School';
+          }
+
           return (
             <div key={stat.educationLevel}>
               <div className="flex justify-between text-sm mb-1 font-medium text-gray-600">
-                <span>{stat.displayLabel}</span>
+                <span>{label}</span>
                 <span className={rate < 0 ? 'text-red-600' : 'text-green-600'}>{rate.toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-3 relative overflow-hidden">
