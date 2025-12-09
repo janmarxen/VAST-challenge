@@ -28,19 +28,23 @@ const SavingsRateByEducation = ({ selectedMonth }) => {
 
   if (!eduStats || eduStats.length === 0) return <div className="text-gray-400 italic">No data for this month</div>;
 
-  // Preferred display order for education levels
-  const preferredOrder = ['Graduate', 'Bachelor', 'High School', 'Low'];
+  // Preferred display order for education levels (use canonical keys from dataset)
+  // Use keys when possible to avoid mismatches between label text and expected order.
+  const preferredOrderKeys = ['Graduate', 'Bachelor', 'HighSchoolOrCollege', 'Low'];
 
-  // Attach display label and sort according to preferred order, falling back to alphabetical
+  // Attach display label and sort primarily by canonical key order, falling back to label
   const labeledStats = eduStats.map(s => ({ ...s, displayLabel: decodeLabel(s.educationLevel) }));
   labeledStats.sort((a, b) => {
-    const ai = preferredOrder.indexOf(a.displayLabel);
-    const bi = preferredOrder.indexOf(b.displayLabel);
-    if (ai !== -1 || bi !== -1) {
-      const aval = ai === -1 ? Number.POSITIVE_INFINITY : ai;
-      const bval = bi === -1 ? Number.POSITIVE_INFINITY : bi;
+    const ai = preferredOrderKeys.indexOf(a.educationLevel);
+    const bi = preferredOrderKeys.indexOf(b.educationLevel);
+    const aIn = ai !== -1;
+    const bIn = bi !== -1;
+    if (aIn || bIn) {
+      const aval = aIn ? ai : Number.POSITIVE_INFINITY;
+      const bval = bIn ? bi : Number.POSITIVE_INFINITY;
       return aval - bval;
     }
+    // If neither key is in preferred list, sort by the human-friendly label
     return a.displayLabel.localeCompare(b.displayLabel);
   });
 
