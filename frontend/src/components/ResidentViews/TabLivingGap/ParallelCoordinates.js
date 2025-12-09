@@ -201,7 +201,7 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
       .style('font-weight', 'bold')
       .style('font-size', '12px');
 
-  }, [data, fullData, selectedIds, sampleRate, dimensions, filterHaveKids]);
+  }, [data, selectedIds, sampleRate, dimensions, filterHaveKids]);
 
   return (
     <div className="flex flex-col h-full w-full">
