@@ -203,16 +203,20 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedId
   }, [data, onFilter, dimensions]); // Removed selectedIds from here, handled in separate effect
 
   // Handle filterHaveKids changes by updating the selection
+  // Use a ref to track if the filter actually changed, to avoid resetting on data reload
+  const prevFilterHaveKids = useRef(filterHaveKids);
+
   useEffect(() => {
     if (!data.length) return;
     
+    // Only proceed if the filter value actually changed
+    if (prevFilterHaveKids.current === filterHaveKids) {
+        return;
+    }
+    prevFilterHaveKids.current = filterHaveKids;
+
     // Only trigger if filterHaveKids is actively set or unset
-    // We don't want to override manual brushing unless the filter changes
     if (filterHaveKids === null) {
-       // If we just cleared the filter, we might want to clear selection
-       // But we should be careful not to clear manual brush if filter didn't change
-       // This effect runs when filterHaveKids changes.
-       // If it changes to null, we clear.
        onFilter(null);
     } else {
        const ids = data.filter(d => d.haveKids === filterHaveKids).map(d => d.participantId);
