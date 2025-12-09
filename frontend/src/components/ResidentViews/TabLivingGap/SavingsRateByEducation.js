@@ -28,6 +28,22 @@ const SavingsRateByEducation = ({ selectedMonth }) => {
 
   if (!eduStats || eduStats.length === 0) return <div className="text-gray-400 italic">No data for this month</div>;
 
+  // Preferred display order for education levels
+  const preferredOrder = ['Graduate', 'Bachelor', 'High School', 'Low'];
+
+  // Attach display label and sort according to preferred order, falling back to alphabetical
+  const labeledStats = eduStats.map(s => ({ ...s, displayLabel: decodeLabel(s.educationLevel) }));
+  labeledStats.sort((a, b) => {
+    const ai = preferredOrder.indexOf(a.displayLabel);
+    const bi = preferredOrder.indexOf(b.displayLabel);
+    if (ai !== -1 || bi !== -1) {
+      const aval = ai === -1 ? Number.POSITIVE_INFINITY : ai;
+      const bval = bi === -1 ? Number.POSITIVE_INFINITY : bi;
+      return aval - bval;
+    }
+    return a.displayLabel.localeCompare(b.displayLabel);
+  });
+
   // Clamp savings rate to [0, 1] for scale
   const clampRate = rate => Math.max(0, Math.min(1, rate));
 
@@ -35,7 +51,7 @@ const SavingsRateByEducation = ({ selectedMonth }) => {
     <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 h-full">
       <h3 className="font-bold text-lg mb-4 text-gray-800">Savings Rate by Education</h3>
       <div className="space-y-5">
-        {eduStats.map(stat => {
+        {labeledStats.map(stat => {
           const rate = clampRate(stat.SavingsRate) * 100;
           const color = rate < 0 ? 'bg-red-500' : 'bg-green-500';
           // Scale: 0–100% maps to full bar width
@@ -44,7 +60,7 @@ const SavingsRateByEducation = ({ selectedMonth }) => {
           return (
             <div key={stat.educationLevel}>
               <div className="flex justify-between text-sm mb-1 font-medium text-gray-600">
-                <span>{decodeLabel(stat.educationLevel)}</span>
+                <span>{stat.displayLabel}</span>
                 <span className={rate < 0 ? 'text-red-600' : 'text-green-600'}>{rate.toFixed(1)}%</span>
               </div>
               <div className="w-full bg-gray-100 rounded-full h-3 relative overflow-hidden">
