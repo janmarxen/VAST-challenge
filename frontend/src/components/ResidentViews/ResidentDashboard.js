@@ -202,7 +202,12 @@ function ResidentDashboard() {
 
       {/* Visualizations */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col" style={{ height: '600px' }}>
-        <WageVsCostScatter onFilter={setSelectedIds} filterHaveKids={filterHaveKids} selectedMonth={selectedMonth} />
+        <WageVsCostScatter 
+          onFilter={setSelectedIds} 
+          selectedIds={selectedIds}
+          filterHaveKids={filterHaveKids} 
+          selectedMonth={selectedMonth} 
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
@@ -218,6 +223,7 @@ function ResidentDashboard() {
           <div className="flex-1 min-h-[620px]">
             <ParallelCoordinates
               selectedIds={selectedIds}
+              onFilter={setSelectedIds}
               selectedMonth={selectedMonth}
               filterHaveKids={filterHaveKids}
             />
