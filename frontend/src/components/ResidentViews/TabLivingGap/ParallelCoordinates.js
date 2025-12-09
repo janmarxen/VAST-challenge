@@ -105,12 +105,14 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
     if (hasBrushes) {
       // If local brushes are active, strictly show the rows that match the brushes
       // This prevents "expanding" the selection to all months for the selected participants
-      dataToPlot = renderData.filter(row => {
+      const brushedData = renderData.filter(row => {
         return Array.from(brushSelections.current.entries()).every(([key, extent]) => {
           const val = yScales[key](row[key]);
           return val >= extent[0] && val <= extent[1];
         });
       });
+      // Apply density sampling to the brushed result as requested
+      dataToPlot = brushedData.filter(() => Math.random() < sampleRate);
     } else if (!selectedIds || selectedIds.length === 0) {
       // No selection: show random sample
       dataToPlot = renderData.filter(() => Math.random() < sampleRate);
