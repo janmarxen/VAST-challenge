@@ -1,0 +1,78 @@
+DEADLINE: Tuesday 11th of November, 10:00am
+
+### Deliverable 1 : index.html ###
+
+# a) General
+
+- title: UL-Marxen-Sterzel-Gantz-MC3
+- list of team members, their affiliation, and email addresses
+- list of analytic tools used in developing your solution
+- estimate of the number of hours spent by the entire team working on this submission
+- GitHub link
+
+# b) Answer the questions about the town
+
+max. 10 images and 500 words for each Question
+Describe your rationale for your answers.
+
+Q1) (Thomas only)
+
+- Over the period covered by the dataset, which businesses appear to be more prosperous? 
+- Which appear to be struggling? 
+- Over time, are businesses growing or shrinking?
+
+Q2) (Jan only)
+
+- How does the financial health of the residents change over the period covered by the dataset? 
+- How do wages compare to the overall cost of living in Engagement? 
+- Are there groups that appear to exhibit similar patterns? 
+- Are standards of living improving or declining over time?
+
+Q3) (Michal only)
+
+- Describe the health of the various employers within the city limits. 
+- What employment patterns do you observe? 
+- Do you notice any areas of particularly high or low turnover? 
+- How are people changing jobs? 
+
+# c) visualization design choices
+
+- Give a clear explanation of your starting point for analysis and how you selected it
+- Explain your rationale for important design decisions
+- Explain how the visualization and interactions helped in the analysis
+- If filters or transformations are applied, explain what was used and in what sequence they were applied
+- If there are anomalies shown in a visualization, explain how they are factored into the analysis
+- Give a careful definition of terms used such as uncertainty
+- Describe any important assumptions you made.
+
+### Deliverable 2 : Presentation ###
+
+- 15 min presentation + 5 min questions
+- presenting the visual interface 
+- a motivation of the main design decisions made
+- how work was organized within the group
+- lessons learned from the project 
+- anything you deem useful
+
+### Deliverable 3 : Video ###
+
+- max. 3 minutes (last information said in class on December 09)
+- Video should support your results/the presentation
+- Procedure: Do a 1 min video for your part and send to Thomas
+
+- Show interesting interactive features
+- What is cool about your solution?
+- Show brushing/linking of multiple views, interactions revealing answers
+
+### Deliverable 4 : repo on GitHub ###
+
+- GitHub tag or as a release for final submission
+
+### Deliverable 5 : UL-Marxen-Sterzel-Gantz-MC3.zip on Moodle ###
+
+- index.html
+- images used by index.html
+- index.html as PDF
+- video
+- slides
+
