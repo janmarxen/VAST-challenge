@@ -17,6 +17,7 @@ function ResidentDashboard() {
   const [activeTab, setActiveTab] = useState(1);
   const [filterHaveKids, setFilterHaveKids] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState('2022-04');
+  const [brushedTimeRange, setBrushedTimeRange] = useState(null);
   const [showFloatingTimeControl, setShowFloatingTimeControl] = useState(false);
   const timeControlRef = useRef(null);
 
@@ -206,7 +207,8 @@ function ResidentDashboard() {
           onFilter={setSelectedIds} 
           selectedIds={selectedIds}
           filterHaveKids={filterHaveKids} 
-          selectedMonth={selectedMonth} 
+          selectedMonth={selectedMonth}
+          brushedTimeRange={brushedTimeRange}
         />
       </div>
 
@@ -226,6 +228,7 @@ function ResidentDashboard() {
               onFilter={setSelectedIds}
               selectedMonth={selectedMonth}
               filterHaveKids={filterHaveKids}
+              onTimeBrush={setBrushedTimeRange}
             />
           </div>
         </div>

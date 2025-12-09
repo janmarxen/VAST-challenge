@@ -7,10 +7,11 @@ import { CLUSTER_COLOR_RANGE, getSortedClusterDomain } from '../colorHelpers';
  * Wage vs Cost of Living Scatter Plot
  * Shows relationship between wages and living costs
  */
-function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedIds }) {
+function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedIds, brushedTimeRange }) {
   const containerRef = useRef();
   const svgRef = useRef();
   const [data, setData] = useState([]);
+  const [allData, setAllData] = useState([]); // Cache for all-months data
   const [loading, setLoading] = useState(true);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const colorScaleRef = useRef(d3.scaleOrdinal(CLUSTER_COLOR_RANGE));
@@ -33,19 +34,44 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedId
     };
   }, []);
 
+  // Fetch data based on mode (single month vs brushed range)
   useEffect(() => {
     setLoading(true);
-    // Pass parameters as an object
-    fetchWageVsCost({ month: selectedMonth })
-      .then(response => {
-        setData(response);
+    
+    if (brushedTimeRange && brushedTimeRange.length > 0) {
+      // If we have a brushed time range, we need data for those months.
+      // If we already have allData, use it. Otherwise fetch it.
+      if (allData.length > 0) {
+        const filtered = allData.filter(d => brushedTimeRange.includes(d.month));
+        setData(filtered);
         setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error fetching wage vs cost data:', error);
-        setLoading(false);
-      });
-  }, [selectedMonth]);
+      } else {
+        fetchWageVsCost({ month: 'all' })
+          .then(response => {
+            setAllData(response);
+            const filtered = response.filter(d => brushedTimeRange.includes(d.month));
+            setData(filtered);
+            setLoading(false);
+          })
+          .catch(error => {
+            console.error('Error fetching all wage vs cost data:', error);
+            setLoading(false);
+          });
+      }
+    } else {
+      // Normal mode: fetch single month
+      // We don't use allData here to keep it lightweight if user never brushes time
+      fetchWageVsCost({ month: selectedMonth })
+        .then(response => {
+          setData(response);
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error('Error fetching wage vs cost data:', error);
+          setLoading(false);
+        });
+    }
+  }, [selectedMonth, brushedTimeRange]); // Removed allData from deps to avoid loops, handled inside
 
   useEffect(() => {
     if (!data.length) return;
@@ -174,19 +200,23 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedId
       if (onFilter) onFilter(selectedIds);
     }
 
-  }, [data, onFilter, dimensions]);
+  }, [data, onFilter, dimensions]); // Removed selectedIds from here, handled in separate effect
 
   // Handle filterHaveKids changes by updating the selection
+  // Use a ref to track if the filter actually changed, to avoid resetting on data reload
+  const prevFilterHaveKids = useRef(filterHaveKids);
+
   useEffect(() => {
     if (!data.length) return;
     
+    // Only proceed if the filter value actually changed
+    if (prevFilterHaveKids.current === filterHaveKids) {
+        return;
+    }
+    prevFilterHaveKids.current = filterHaveKids;
+
     // Only trigger if filterHaveKids is actively set or unset
-    // We don't want to override manual brushing unless the filter changes
     if (filterHaveKids === null) {
-       // If we just cleared the filter, we might want to clear selection
-       // But we should be careful not to clear manual brush if filter didn't change
-       // This effect runs when filterHaveKids changes.
-       // If it changes to null, we clear.
        onFilter(null);
     } else {
        const ids = data.filter(d => d.haveKids === filterHaveKids).map(d => d.participantId);
@@ -232,7 +262,7 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedId
       <div className="flex justify-between items-center mb-2">
         <h3 className="text-lg font-bold text-gray-800">The Living Gap: Income vs Cost</h3>
         <div className="text-xs text-gray-500 italic">
-            Drag to select residents
+            {brushedTimeRange ? `Showing ${brushedTimeRange.length} months` : 'Drag to select residents'}
         </div>
       </div>
       <div
