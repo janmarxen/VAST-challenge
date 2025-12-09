@@ -5,7 +5,7 @@ export const LABELS = {
   Income: 'Income',
   CostOfLiving: 'Cost of Living',
   SavingsRate: 'Savings Rate',
-  HighSchoolOrCollege: 'High School'
+  HighSchoolOrCollege: 'High School Or College'
   // extend as needed for other views
 };
 
