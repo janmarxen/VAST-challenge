@@ -4,12 +4,12 @@ import { fetchParallelCoordinates } from '../../../utils/api';
 import { decodeLabel } from '../labels';
 import { CLUSTER_COLOR_RANGE, getSortedClusterDomain } from '../colorHelpers';
 
-function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveKids }) {
+function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveKids, onTimeBrush }) {
   const containerRef = useRef();
   const svgRef = useRef();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sampleRate, setSampleRate] = useState(0.2); // Default 20% sampling
+  const [sampleRate, setSampleRate] = useState(0.05); // Default 5% sampling
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const brushSelections = useRef(new Map());
 
@@ -163,8 +163,22 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
 
             if (event.selection) {
               brushSelections.current.set(d, event.selection);
+              
+              // If this is the time axis, notify parent
+              if (d === 'month' && onTimeBrush) {
+                const [y0, y1] = event.selection;
+                const domain = yScales[d].domain();
+                const selectedMonths = domain.filter(m => {
+                  const y = yScales[d](m);
+                  return y >= y0 && y <= y1;
+                });
+                onTimeBrush(selectedMonths);
+              }
             } else {
               brushSelections.current.delete(d);
+              if (d === 'month' && onTimeBrush) {
+                onTimeBrush(null);
+              }
             }
 
             // Filter data based on all active brushes
@@ -215,7 +229,7 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
           <input
             type="range"
             min="0.01"
-            max="1"
+            max="0.2"
             step="0.01"
             value={sampleRate}
             onChange={(e) => setSampleRate(parseFloat(e.target.value))}

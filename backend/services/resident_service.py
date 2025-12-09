@@ -242,11 +242,17 @@ def get_wage_vs_cost_data(education=None, household_size=None, have_kids=None, m
     try:
         merged_df, _, monthly_financial = _get_data()
         
-        if month:
+        if month and month != 'all':
             # Use specific month data
             df = monthly_financial[monthly_financial['month'].astype(str) == month].copy()
             # Merge with static attributes (demographics + cluster) from merged_df
             # We use the global cluster assignment
+            static_attrs = merged_df[['participantId', 'educationLevel', 'householdSize', 'haveKids', 'age', 'Cluster']]
+            df = pd.merge(df, static_attrs, on='participantId')
+        elif month == 'all':
+            # Use all monthly data
+            df = monthly_financial.copy()
+            df['month'] = df['month'].astype(str)
             static_attrs = merged_df[['participantId', 'educationLevel', 'householdSize', 'haveKids', 'age', 'Cluster']]
             df = pd.merge(df, static_attrs, on='participantId')
         else:
@@ -266,7 +272,11 @@ def get_wage_vs_cost_data(education=None, household_size=None, have_kids=None, m
             df['month'] = df['month'].astype(str)
             
         # Return relevant columns
-        return df.to_dict(orient='records')
+        cols = ['participantId', 'Income', 'CostOfLiving', 'Cluster', 'haveKids']
+        if month == 'all':
+            cols.append('month')
+            
+        return df[cols].to_dict(orient='records')
     except Exception as e:
         print("Error in get_wage_vs_cost_data:")
         traceback.print_exc()
