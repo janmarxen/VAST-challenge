@@ -15,8 +15,60 @@ export const fetchBusinessRevenue = (employerId, startDate, endDate) => {
     .then(response => response.data);
 };
 
-export const fetchMarketShare = () => {
-  return axios.get(`${API_BASE_URL}/business/market-share`)
+export const fetchVenueTimeseries = ({ venueId, venueType, participantId, startDate, endDate, resolution } = {}) => {
+  const params = new URLSearchParams();
+  if (venueId) params.append('venue_id', venueId);
+  if (venueType) params.append('venue_type', venueType);
+  if (participantId) params.append('participant_id', participantId);
+  if (startDate) params.append('start_date', startDate);
+  if (endDate) params.append('end_date', endDate);
+  if (resolution) params.append('resolution', resolution);
+  
+  return axios.get(`${API_BASE_URL}/business/venue-timeseries?${params}`)
+    .then(response => response.data);
+};
+
+export const fetchMarketShare = ({ venueType, venueId, participantId, startDate, endDate } = {}) => {
+  const params = new URLSearchParams();
+  if (venueType) params.append('venue_type', venueType);
+  if (venueId) params.append('venue_id', venueId);
+  if (participantId) params.append('participant_id', participantId);
+  if (startDate) params.append('start_date', startDate);
+  if (endDate) params.append('end_date', endDate);
+  
+  return axios.get(`${API_BASE_URL}/business/market-share?${params}`)
+    .then(response => response.data);
+};
+
+export const fetchBusinessTrends = ({ venueType, venueId, participantId, startDate, endDate } = {}) => {
+  const params = new URLSearchParams();
+  if (venueType) params.append('venue_type', venueType);
+  if (venueId) params.append('venue_id', venueId);
+  if (participantId) params.append('participant_id', participantId);
+  if (startDate) params.append('start_date', startDate);
+  if (endDate) params.append('end_date', endDate);
+  
+  return axios.get(`${API_BASE_URL}/business/business-trends?${params}`)
+    .then(response => response.data);
+};
+
+export const fetchVenues = () => {
+  return axios.get(`${API_BASE_URL}/business/venues`)
+    .then(response => response.data);
+};
+
+export const fetchParticipants = ({ venueType, venueId } = {}) => {
+  const params = new URLSearchParams();
+  if (venueType) params.append('venue_type', venueType);
+  if (venueId) params.append('venue_id', venueId);
+  
+  const queryString = params.toString();
+  return axios.get(`${API_BASE_URL}/business/participants${queryString ? '?' + queryString : ''}`)
+    .then(response => response.data);
+};
+
+export const fetchUnifiedDataset = (limit = 100) => {
+  return axios.get(`${API_BASE_URL}/business/unified-dataset?limit=${limit}`)
     .then(response => response.data);
 };
 
