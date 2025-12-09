@@ -334,7 +334,7 @@ def get_parallel_coordinates_data(have_kids=None, month=None):
     try:
         merged_df, _, monthly_financial = _get_data()
         
-        if month:
+        if month and month != 'all':
             # Use specific month data
             df = monthly_financial[monthly_financial['month'].astype(str) == month].copy()
             # Merge with static attributes
@@ -344,6 +344,14 @@ def get_parallel_coordinates_data(have_kids=None, month=None):
             # Calculate SavingsRate for this month
             df['Savings'] = df['Income'] - df['CostOfLiving']
             df['SavingsRate'] = np.where(df['Income'] > 0, df['Savings'] / df['Income'], 0)
+        elif month == 'all':
+            # Use all monthly data
+            df = monthly_financial.copy()
+            df['month'] = df['month'].astype(str)
+            
+            # Merge with static attributes
+            static_attrs = merged_df[['participantId', 'educationLevel', 'householdSize', 'haveKids', 'age', 'Cluster']]
+            df = pd.merge(df, static_attrs, on='participantId')
         else:
             df = merged_df.copy()
         
@@ -353,9 +361,8 @@ def get_parallel_coordinates_data(have_kids=None, month=None):
         
         # Select relevant columns
         cols = ['participantId', 'educationLevel', 'age', 'householdSize', 'Income', 'CostOfLiving', 'SavingsRate', 'Cluster', 'haveKids']
-        # If month is in df, we might want to keep it or just ensure it doesn't break things if we selected it.
-        # But cols doesn't include 'month', so it should be fine unless we add it.
-        # However, let's be safe and convert it if we ever decide to include it or if it leaks in.
+        if month == 'all':
+            cols.append('month')
         
         result_df = df[cols].copy()
         return result_df.to_dict(orient='records')

@@ -8,7 +8,6 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
   const containerRef = useRef();
   const svgRef = useRef();
   const [data, setData] = useState([]);
-  const [fullData, setFullData] = useState([]); // full-month dataset used for stable domains
   const [loading, setLoading] = useState(true);
   const [sampleRate, setSampleRate] = useState(0.2); // Default 20% sampling
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -39,19 +38,10 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
     }
   }, [selectedIds]);
 
-  // Fetch full-month data (no cohort filter) to compute stable axis domains
-  useEffect(() => {
-    fetchParallelCoordinates({ month: selectedMonth })
-      .then(response => {
-        setFullData(response || []);
-      })
-      .catch(err => console.warn('Error fetching full PCP data for domains:', err));
-  }, [selectedMonth]);
-
-  // Fetch cohort (respecting have-kids) for rendering
+  // Fetch data (ALL months)
   useEffect(() => {
     setLoading(true);
-    fetchParallelCoordinates({ month: selectedMonth, haveKids: filterHaveKids })
+    fetchParallelCoordinates({ month: 'all', haveKids: filterHaveKids })
       .then(response => {
         setData(response || []);
         setLoading(false);
@@ -60,7 +50,7 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
         console.error('Error fetching PCP data:', error);
         setLoading(false);
       });
-  }, [selectedMonth, filterHaveKids]);
+  }, [filterHaveKids]); // Removed selectedMonth dependency
 
   useEffect(() => {
     if (!data.length || dimensions.width === 0 || dimensions.height === 0) return;
@@ -70,7 +60,7 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
     const renderData = filteredData.length ? filteredData : data;
 
     // Reduced margins to maximize horizontal space
-    const margin = { top: 40, right: 10, bottom: 40, left: 30 };
+    const margin = { top: 40, right: 10, bottom: 40, left: 50 }; // Increased left margin for month labels
     const width = dimensions.width - margin.left - margin.right;
     const height = dimensions.height - margin.top - margin.bottom;
 
@@ -80,24 +70,27 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
     const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
 
     // Dimensions to plot
-    const dims = ['age', 'householdSize', 'Income', 'CostOfLiving', 'SavingsRate'];
+    const dims = ['month', 'age', 'householdSize', 'Income', 'CostOfLiving', 'SavingsRate'];
 
-    // Scales — compute domains from the full dataset so axes remain stable
+    // Scales
     const yScales = {};
-    // Prefer fullData for domain computation; fall back to the currently fetched data
-    const domainSource = fullData && fullData.length ? fullData : data;
     dims.forEach(dim => {
-      yScales[dim] = d3.scaleLinear().domain(d3.extent(domainSource, d => d[dim])).range([height, 0]);
+      if (dim === 'month') {
+        const months = [...new Set(renderData.map(d => d[dim]))].sort();
+        yScales[dim] = d3.scalePoint().domain(months).range([height, 0]).padding(0.1);
+      } else {
+        yScales[dim] = d3.scaleLinear().domain(d3.extent(renderData, d => d[dim])).range([height, 0]);
+      }
     });
 
     const xScale = d3.scalePoint().range([0, width]).padding(0.5).domain(dims);
 
     // Color scale (match scatterplot palette)
-    const clusterDomain = getSortedClusterDomain((fullData.length ? fullData : data).map(d => d.Cluster));
+    const clusterDomain = getSortedClusterDomain(renderData.map(d => d.Cluster));
     const colorScale = d3.scaleOrdinal().domain(clusterDomain).range(CLUSTER_COLOR_RANGE);
 
     // Line generator
-    const line = d3.line().defined(d => !isNaN(d[1])).x(d => xScale(d[0])).y(d => yScales[d[0]](d[1]));
+    const line = d3.line().defined(d => !isNaN(d[1]) && d[1] !== undefined).x(d => xScale(d[0])).y(d => yScales[d[0]](d[1]));
     function path(d) {
       return line(dims.map(p => [p, d[p]]));
     }
@@ -153,6 +146,8 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
           const max = Math.ceil(domain[1]);
           const ticks = d3.range(min, max + 1);
           d3.select(this).call(d3.axisLeft(yScales[d]).tickValues(ticks).tickFormat(d3.format('d')));
+        } else if (d === 'month') {
+          d3.select(this).call(d3.axisLeft(yScales[d]));
         } else {
           d3.select(this).call(d3.axisLeft(yScales[d]).ticks(5));
         }
@@ -185,7 +180,9 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
               });
             });
 
-            const ids = selected.map(row => row.participantId);
+            // When filtering by month, we might select multiple rows for the same participant.
+            // We want to return unique participant IDs.
+            const ids = [...new Set(selected.map(row => row.participantId))];
             if (onFilter) onFilter(ids);
           });
 
