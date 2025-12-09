@@ -277,25 +277,3 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedId
 }
 
 export default WageVsCostScatter;
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-lg font-bold text-gray-800">The Living Gap: Income vs Cost</h3>
-        <div className="text-xs text-gray-500 italic">
-            Drag to select residents
-        </div>
-      </div>
-      <div
-            ref={containerRef}
-            className="w-full flex-grow"
-            style={{ height: "100%" }}
-          >
-        {loading ? (
-            <div className="flex items-center justify-center h-full text-gray-400">Loading data...</div>
-        ) : (
-            <svg ref={svgRef} width="100%" height="100%" style={{ overflow: 'visible', flex: 1 }} />
-        )}
-      </div>
-    </div>
-  );
-}
-
-export default WageVsCostScatter;
