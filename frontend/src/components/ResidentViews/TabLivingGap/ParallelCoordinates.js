@@ -12,6 +12,7 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
   const [loading, setLoading] = useState(true);
   const [sampleRate, setSampleRate] = useState(0.2); // Default 20% sampling
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const brushSelections = useRef(new Map());
 
   // Handle resize
   useEffect(() => {
@@ -30,6 +31,13 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
       if (observeTarget) resizeObserver.unobserve(observeTarget);
     };
   }, []);
+
+  // Clear brushes if selection is reset externally
+  useEffect(() => {
+    if (!selectedIds) {
+      brushSelections.current.clear();
+    }
+  }, [selectedIds]);
 
   // Fetch full-month data (no cohort filter) to compute stable axis domains
   useEffect(() => {
@@ -147,6 +155,45 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
           d3.select(this).call(d3.axisLeft(yScales[d]).tickValues(ticks).tickFormat(d3.format('d')));
         } else {
           d3.select(this).call(d3.axisLeft(yScales[d]).ticks(5));
+        }
+
+        // Add brush
+        const brush = d3.brushY()
+          .extent([[-10, 0], [10, height]])
+          .on('end', (event) => {
+            if (!event.sourceEvent) return; // Ignore programmatic changes
+
+            if (event.selection) {
+              brushSelections.current.set(d, event.selection);
+            } else {
+              brushSelections.current.delete(d);
+            }
+
+            // Filter data based on all active brushes
+            if (brushSelections.current.size === 0) {
+              if (onFilter) onFilter(null);
+              return;
+            }
+
+            const selected = renderData.filter(row => {
+              return Array.from(brushSelections.current.entries()).every(([key, extent]) => {
+                const val = yScales[key](row[key]);
+                // Brush selection is [y0, y1] (pixels)
+                // D3 y-scale maps value to pixels.
+                // Check if pixel value is within extent.
+                return val >= extent[0] && val <= extent[1];
+              });
+            });
+
+            const ids = selected.map(row => row.participantId);
+            if (onFilter) onFilter(ids);
+          });
+
+        const brushGroup = d3.select(this).append('g').call(brush);
+
+        // Restore brush selection if exists
+        if (brushSelections.current.has(d)) {
+          brush.move(brushGroup, brushSelections.current.get(d));
         }
       })
       .append('text')

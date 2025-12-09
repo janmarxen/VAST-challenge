@@ -7,7 +7,7 @@ import { CLUSTER_COLOR_RANGE, getSortedClusterDomain } from '../colorHelpers';
  * Wage vs Cost of Living Scatter Plot
  * Shows relationship between wages and living costs
  */
-function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth }) {
+function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedIds }) {
   const containerRef = useRef();
   const svgRef = useRef();
   const [data, setData] = useState([]);
@@ -155,7 +155,6 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth }) {
 
     function brushed(event) {
       if (!event.selection) {
-        circles.attr('fill', d => colorScale(d.Cluster)).attr('opacity', 0.6).attr('r', 4);
         if (onFilter) onFilter(null); // Reset filter
         return;
       }
@@ -163,22 +162,13 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth }) {
       const [[x0, y0], [x1, y1]] = event.selection;
       
       const selectedIds = [];
-      circles.attr('fill', d => {
+      // Calculate selected IDs but don't update DOM directly
+      // Let the useEffect handle the visual update via selectedIds prop
+      filteredData.forEach(d => {
         const x = xScale(d.CostOfLiving);
         const y = yScale(d.Income);
         const isSelected = x >= x0 && x <= x1 && y >= y0 && y <= y1;
         if (isSelected) selectedIds.push(d.participantId);
-        return isSelected ? colorScale(d.Cluster) : '#e5e7eb';
-      }).attr('opacity', d => {
-        const x = xScale(d.CostOfLiving);
-        const y = yScale(d.Income);
-        const isSelected = x >= x0 && x <= x1 && y >= y0 && y <= y1;
-        return isSelected ? 0.9 : 0.3;
-      }).attr('r', d => {
-        const x = xScale(d.CostOfLiving);
-        const y = yScale(d.Income);
-        const isSelected = x >= x0 && x <= x1 && y >= y0 && y <= y1;
-        return isSelected ? 5 : 3.5;
       });
 
       if (onFilter) onFilter(selectedIds);
@@ -186,6 +176,25 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth }) {
 
   }, [data, onFilter, dimensions]);
 
+  // Handle filterHaveKids changes by updating the selection
+  useEffect(() => {
+    if (!data.length) return;
+    
+    // Only trigger if filterHaveKids is actively set or unset
+    // We don't want to override manual brushing unless the filter changes
+    if (filterHaveKids === null) {
+       // If we just cleared the filter, we might want to clear selection
+       // But we should be careful not to clear manual brush if filter didn't change
+       // This effect runs when filterHaveKids changes.
+       // If it changes to null, we clear.
+       onFilter(null);
+    } else {
+       const ids = data.filter(d => d.haveKids === filterHaveKids).map(d => d.participantId);
+       onFilter(ids);
+    }
+  }, [filterHaveKids, data]); // Removed onFilter from deps to avoid loops if onFilter is unstable, but it should be fine.
+
+  // Handle visual updates based on selectedIds (from any source)
   useEffect(() => {
     if (!data.length || !svgRef.current) return;
     const svg = d3.select(svgRef.current);
@@ -194,33 +203,29 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth }) {
 
     const colorScale = colorScaleRef.current;
 
-    if (filterHaveKids === null) {
+    if (!selectedIds || selectedIds.length === 0) {
       circles
         .attr('fill', d => colorScale(d.Cluster))
         .attr('opacity', 0.6)
         .attr('r', 4);
-      if (onFilter) onFilter(null);
       return;
     }
 
-    const selectedIds = [];
     circles
       .attr('fill', d => {
-        const matches = filterHaveKids ? d.haveKids : !d.haveKids;
-        if (matches) selectedIds.push(d.participantId);
-        return matches ? colorScale(d.Cluster) : '#e5e7eb';
+        const isSelected = selectedIds.includes(d.participantId);
+        return isSelected ? colorScale(d.Cluster) : '#e5e7eb';
       })
       .attr('opacity', d => {
-        const matches = filterHaveKids ? d.haveKids : !d.haveKids;
-        return matches ? 0.95 : 0.15;
+        const isSelected = selectedIds.includes(d.participantId);
+        return isSelected ? 0.9 : 0.15;
       })
       .attr('r', d => {
-        const matches = filterHaveKids ? d.haveKids : !d.haveKids;
-        return matches ? 5.5 : 3;
+        const isSelected = selectedIds.includes(d.participantId);
+        return isSelected ? 5 : 3;
       });
 
-    if (onFilter) onFilter(filterHaveKids === null ? selectedIds : null);
-  }, [filterHaveKids, data, onFilter]);
+  }, [selectedIds, data]);
 
   return (
     <div className="flex flex-col h-full w-full">
