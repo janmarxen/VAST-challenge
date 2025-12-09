@@ -100,9 +100,22 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
 
     // Sampling logic (works on the cohort in renderData)
     let dataToPlot = renderData;
-    if (!selectedIds || selectedIds.length === 0) {
+    const hasBrushes = brushSelections.current.size > 0;
+
+    if (hasBrushes) {
+      // If local brushes are active, strictly show the rows that match the brushes
+      // This prevents "expanding" the selection to all months for the selected participants
+      dataToPlot = renderData.filter(row => {
+        return Array.from(brushSelections.current.entries()).every(([key, extent]) => {
+          const val = yScales[key](row[key]);
+          return val >= extent[0] && val <= extent[1];
+        });
+      });
+    } else if (!selectedIds || selectedIds.length === 0) {
+      // No selection: show random sample
       dataToPlot = renderData.filter(() => Math.random() < sampleRate);
     } else {
+      // External selection (e.g. from Scatterplot): show all rows for selected participants
       const selectedData = renderData.filter(d => selectedIds.includes(d.participantId));
       const unselectedData = renderData.filter(d => !selectedIds.includes(d.participantId));
       const sampledUnselected = unselectedData.filter(() => Math.random() < (sampleRate * 0.5));
@@ -117,18 +130,26 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
       .attr('d', path)
       .style('fill', 'none')
       .style('stroke', d => {
+        // If we have local brushes, everything in dataToPlot is "selected"
+        if (hasBrushes) return colorScale(d.Cluster);
+        
         if (selectedIds && selectedIds.length > 0) {
           return selectedIds.includes(d.participantId) ? colorScale(d.Cluster) : '#e5e7eb';
         }
         return colorScale(d.Cluster);
       })
       .style('opacity', d => {
+        // If we have local brushes, everything in dataToPlot is "selected"
+        if (hasBrushes) return 0.8;
+
         if (selectedIds && selectedIds.length > 0) {
           return selectedIds.includes(d.participantId) ? 0.8 : 0.2;
         }
         return 0.4;
       })
       .style('stroke-width', d => {
+        if (hasBrushes) return 2;
+
         if (selectedIds && selectedIds.length > 0) {
           return selectedIds.includes(d.participantId) ? 2 : 1;
         }
