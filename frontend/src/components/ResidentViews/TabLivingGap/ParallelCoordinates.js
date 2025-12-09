@@ -90,7 +90,10 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
     const colorScale = d3.scaleOrdinal().domain(clusterDomain).range(CLUSTER_COLOR_RANGE);
 
     // Line generator
-    const line = d3.line().defined(d => !isNaN(d[1]) && d[1] !== undefined).x(d => xScale(d[0])).y(d => yScales[d[0]](d[1]));
+    const line = d3.line()
+      .defined(d => d[1] !== undefined && d[1] !== null && (d[0] === 'month' || !isNaN(d[1])))
+      .x(d => xScale(d[0]))
+      .y(d => yScales[d[0]](d[1]));
     function path(d) {
       return line(dims.map(p => [p, d[p]]));
     }
