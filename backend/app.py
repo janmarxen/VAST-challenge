@@ -13,7 +13,9 @@ CORS(app)  # Enable CORS for frontend requests
 # Register blueprints (modular routers)
 app.register_blueprint(business_router.bp, url_prefix='/api/business')
 app.register_blueprint(resident_router.bp, url_prefix='/api/resident')
-app.register_blueprint(employer_router.bp, url_prefix='/api/employer')
+# app.register_blueprint(employer_router.bp, url_prefix='/api/employer')
+app.register_blueprint(employer_router.employer_bp)
+
 
 @app.route('/health')
 def health_check():
