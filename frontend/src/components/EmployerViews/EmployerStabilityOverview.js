@@ -371,6 +371,17 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Header with description */}
+      <div className="bg-indigo-50 border-l-4 border-indigo-400 p-2 rounded">
+        <h3 className="font-semibold text-indigo-900 text-xs">Employer Stability Overview</h3>
+        <p className="text-xs text-indigo-800 mt-0.5">
+          Multi-dimensional view: bubble size = headcount, position = turnover/tenure, color = stability category.
+        </p>
+      </div>
+
+      {/* Spacer to align with month toggle in TurnoverScatterplot */}
+      <div className="h-10"></div>
+
       <div className="relative overflow-x-auto">
         <svg ref={svgRef} width={600} height={380} style={{ maxWidth: '100%', border: '1px solid #e5e7eb' }}></svg>
       </div>
@@ -404,10 +415,6 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
           <span className="font-semibold text-green-700">🟢 Stable:</span> Turnover &lt; 5% AND Tenure &gt; 250d
         </div>
       </div>
-
-      <p className="text-xs text-gray-600 text-center">
-        Drag to select multiple bubbles. Click to select individual employer. Jitter applied in pixel space for better visibility.
-      </p>
     </div>
   );
 }

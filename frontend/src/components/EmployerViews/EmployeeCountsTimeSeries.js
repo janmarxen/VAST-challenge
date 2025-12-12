@@ -394,6 +394,15 @@ function EmployeeCountsTimeSeries({ selectedEmployer, brushedEmployers, highligh
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Header with description */}
+      <div className="bg-green-50 border-l-4 border-green-400 p-3 rounded">
+        <h3 className="font-semibold text-green-900 text-sm">Employee Count Trends</h3>
+        <p className="text-xs text-green-800 mt-1">
+          Tracks workforce size changes over time for selected employers (only days with changes shown). 
+          Click lines or legend to highlight specific employers independently. Compare growth and decline patterns.
+        </p>
+      </div>
+
       {/* Display count buttons - similar to TurnoverScatterplot */}
       {!selectedEmployer && !brushedEmployers?.length && (
         <div className="flex items-center justify-center gap-2">
@@ -436,12 +445,12 @@ function EmployeeCountsTimeSeries({ selectedEmployer, brushedEmployers, highligh
         </div>
       )}
 
-      <p className="text-xs text-gray-600 text-center">
-        Step-line chart showing only days where employee count changed. 
-        <strong>Click a line or legend item to highlight (independent from brush selection).</strong> Brush selection shows in blue, click selection in orange. Grayed-out opacity reduced for non-selected lines.
-        {selectedEmployer && ` Showing Employer #${selectedEmployer}.`}
+      {/* <p className="text-xs text-gray-600 text-center"> */}
+        {/* Step-line chart showing only days where employee count changed. 
+        <strong>Click a line or legend item to highlight (independent from brush selection).</strong> Brush selection shows in blue, click selection in orange. Grayed-out opacity reduced for non-selected lines. */}
+        {/* {selectedEmployer && ` Showing Employer #${selectedEmployer}.`}
         {brushedEmployers && brushedEmployers.length > 0 && ` Showing ${brushedEmployers.length} selected employers.`}
-      </p>
+      </p> */}
     </div>
   );
 }

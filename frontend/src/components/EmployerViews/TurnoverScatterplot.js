@@ -46,7 +46,7 @@ function TurnoverScatterplot({ selectedEmployer, onEmployerSelect, onBrush, onMo
             avgTenure: tenureRecord ? tenureRecord.avgTenure : 0,
             hires: t.hires,
             quits: t.quits,
-            switches: t.switches
+            net_change: t.net_change
           };
         });
         setData(combined);
@@ -246,6 +246,14 @@ function TurnoverScatterplot({ selectedEmployer, onEmployerSelect, onBrush, onMo
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Header with description */}
+      <div className="bg-purple-50 border-l-4 border-purple-400 p-2 rounded">
+        <h3 className="font-semibold text-purple-900 text-xs">Turnover vs Tenure</h3>
+        <p className="text-xs text-purple-800 mt-0.5">
+          Compares turnover rate vs tenure to reveal stable/unstable patterns. Brush to select multiple, click for single focus.
+        </p>
+      </div>
+
       {/* Month Toggle */}
       <div className="flex items-center gap-3">
         <label className="text-xs font-semibold text-gray-700">Month:</label>

@@ -192,7 +192,10 @@ def _process_employee_counts():
 
 def _process_turnover(employee_counts_df=None):
     """Produce `turnover.csv` with columns:
-    month, employerId, hires, quits, switches, turnoverRate
+    month, employerId, hires, quits, net_change, turnoverRate
+    
+    net_change = hires - quits (positive: net growth, negative: net decline)
+    turnoverRate = (hires + quits) / avgEmployeeCount
     """
     jobs = _load_jobs()
     job_to_employer = jobs.set_index('jobId')['employerId'].to_dict()
@@ -208,7 +211,7 @@ def _process_turnover(employee_counts_df=None):
 
     if len(frames) == 0:
         print("[employer_service] No status logs present; writing empty turnover.csv")
-        out = pd.DataFrame(columns=['month', 'employerId', 'hires', 'quits', 'switches', 'turnoverRate'])
+        out = pd.DataFrame(columns=['month', 'employerId', 'hires', 'quits', 'net_change', 'turnoverRate'])
         _save_csv(out, 'turnover.csv')
         return out
 
@@ -245,7 +248,7 @@ def _process_turnover(employee_counts_df=None):
 
     if len(events) == 0:
         print("[employer_service] No transitions detected; writing empty turnover.csv")
-        out = pd.DataFrame(columns=['month', 'employerId', 'hires', 'quits', 'switches', 'turnoverRate'])
+        out = pd.DataFrame(columns=['month', 'employerId', 'hires', 'quits', 'net_change', 'turnoverRate'])
         _save_csv(out, 'turnover.csv')
         return out
 
@@ -269,15 +272,17 @@ def _process_turnover(employee_counts_df=None):
         merged = grouped.copy()
         merged['avgEmployeeCount'] = np.nan
 
-    # Compute turnoverRate
+    # Compute net_change and turnoverRate
+    merged['net_change'] = merged['hires'] - merged['quits']
+    
     def _calc_turnover(row):
         denom = row['avgEmployeeCount']
         if pd.isna(denom) or denom == 0:
             return 0.0
-        return float((row.get('hires', 0) + row.get('quits', 0) + row.get('switches', 0)) / denom)
+        return float((row.get('hires', 0) + row.get('quits', 0)) / denom)
 
     merged['turnoverRate'] = merged.apply(_calc_turnover, axis=1)
-    out = merged[['month', 'employerId', 'hires', 'quits', 'switches', 'turnoverRate']].copy()
+    out = merged[['month', 'employerId', 'hires', 'quits', 'net_change', 'turnoverRate']].copy()
     _save_csv(out, 'turnover.csv')
     print(f"[employer_service] Wrote turnover for {len(out)} (month,employer) groups")
     return out

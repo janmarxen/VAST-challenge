@@ -193,6 +193,15 @@ function JobFlowSankey({ selectedEmployer, minFlowThreshold = 1 }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Header with description */}
+      <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
+        <h3 className="font-semibold text-amber-900 text-sm">Job Flow Between Employers</h3>
+        <p className="text-xs text-amber-800 mt-1">
+          Visualizes how workers move between employers and transition volumes. Hover flows to see movement percentages. 
+          Click flows to isolate. Explore which employers are major sources or destinations.
+        </p>
+      </div>
+
       <div className="relative overflow-x-auto flex justify-center">
         <svg ref={svgRef} width={800} height={450} style={{ maxWidth: '100%', border: '1px solid #e5e7eb' }}></svg>
       </div>
@@ -220,10 +229,6 @@ function JobFlowSankey({ selectedEmployer, minFlowThreshold = 1 }) {
           )}
         </div>
       )}
-
-      <p className="text-xs text-gray-600 text-center">
-        Click a flow to isolate it. Hover flows to see % of employees moved. Hover nodes to see inflow/outflow/net gain.
-      </p>
     </div>
   );
 }

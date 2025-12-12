@@ -53,7 +53,7 @@ function TurnoverRanking({ selectedEmployer, onEmployerSelect, selectedMonth, on
         if (sortBy === 'turnoverRate') return b.turnoverRate - a.turnoverRate;
         if (sortBy === 'hires') return b.hires - a.hires;
         if (sortBy === 'quits') return b.quits - a.quits;
-        if (sortBy === 'switches') return b.switches - a.switches;
+        if (sortBy === 'net_change') return b.net_change - a.net_change;
         return 0;
       })
       .slice(0, employerCount);
@@ -117,7 +117,7 @@ function TurnoverRanking({ selectedEmployer, onEmployerSelect, selectedMonth, on
             turnoverRate: (d.turnoverRate * 100).toFixed(1) + '%',
             hires: d.hires,
             quits: d.quits,
-            switches: d.switches
+            net_change: d.net_change
           }
         });
       })
@@ -155,6 +155,15 @@ function TurnoverRanking({ selectedEmployer, onEmployerSelect, selectedMonth, on
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Header with description */}
+      <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
+        <h3 className="font-semibold text-blue-900 text-sm">Turnover Ranking</h3>
+        <p className="text-xs text-blue-800 mt-1">
+          Ranks employers by workforce change intensity. Switch metrics to compare turnover rate, hires, quits, or net change. 
+          Click bars to highlight across other charts.
+        </p>
+      </div>
+
       {/* Controls: Month Toggle, Sort, Employer Count */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
@@ -197,7 +206,7 @@ function TurnoverRanking({ selectedEmployer, onEmployerSelect, selectedMonth, on
             <option value="turnoverRate">Turnover Rate</option>
             <option value="hires">Hires</option>
             <option value="quits">Quits</option>
-            <option value="switches">Switches</option>
+            <option value="net_change">Net Change</option>
           </select>
         </div>
 
@@ -232,13 +241,9 @@ function TurnoverRanking({ selectedEmployer, onEmployerSelect, selectedMonth, on
           <div>Turnover: {tooltip.content.turnoverRate}</div>
           <div>Hires: {tooltip.content.hires}</div>
           <div>Quits: {tooltip.content.quits}</div>
-          <div>Switches: {tooltip.content.switches}</div>
+          <div>Net Change: {tooltip.content.net_change}</div>
         </div>
       )}
-
-      <p className="text-xs text-gray-600 text-center">
-        Click an employer bar to highlight it. Blue highlighted bars indicate brushed selection from scatterplot.
-      </p>
     </div>
   );
 }

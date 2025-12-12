@@ -53,9 +53,6 @@ function EmployerDashboard() {
         {/* Row 1: Turnover Ranking (Full Width) */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Employer Turnover Ranking</h3>
-          <p className="text-xs text-gray-500 mb-4">
-            Identify employers with highest/lowest turnover rates. Use the month toggle and employer count buttons to explore. Click bars to highlight across charts.
-          </p>
           <div className="flex-1 min-h-[500px]">
             <TurnoverRanking 
               selectedEmployer={selectedEmployer}
@@ -70,9 +67,6 @@ function EmployerDashboard() {
         {/* Row 2: Job Flow Sankey (Full Width) */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Job Flow Between Employers</h3>
-          <p className="text-xs text-gray-500 mb-2">
-            Shows worker transitions from one employer to another.
-          </p>
           <div className="mb-3 flex items-center gap-2">
             <label className="text-xs font-medium text-gray-700">Min flow count:</label>
             <input 
@@ -99,10 +93,7 @@ function EmployerDashboard() {
           {/* Employer Stability Overview */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">Employer Stability Overview</h3>
-            <p className="text-xs text-gray-500 mb-4">
-              Bubble scatter: X = turnover, Y = tenure, Size = headcount, Color = stability.
-            </p>
-            <div style={{ height: '400px' }} className="overflow-hidden">
+            <div style={{ height: '550px' }} className="overflow-hidden">
               <EmployerStabilityOverview 
                 selectedEmployer={selectedEmployer}
                 onEmployerSelect={handleEmployerSelect}
@@ -115,10 +106,7 @@ function EmployerDashboard() {
           {/* Turnover vs Tenure Scatterplot */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
             <h3 className="text-sm font-semibold text-gray-900 mb-2">Turnover Rate vs Tenure Scatterplot</h3>
-            <p className="text-xs text-gray-500 mb-4">
-              High turnover + low tenure = instability. Drag to select multiple.
-            </p>
-            <div style={{ height: '400px' }} className="overflow-hidden">
+            <div style={{ height: '550px' }} className="overflow-hidden">
               <TurnoverScatterplot 
                 selectedEmployer={selectedEmployer}
                 onEmployerSelect={handleEmployerSelect}
@@ -135,9 +123,6 @@ function EmployerDashboard() {
         {/* Row 4: Employee Counts Time Series (Full Width) */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">Employee Count Trends (March - April 2022)</h3>
-          <p className="text-xs text-gray-500 mb-4">
-            Compare workforce size over time. Click lines to select/deselect. Lines highlighted by brush selection from scatterplot. Daily data points.
-          </p>
           <div className="min-h-[400px]">
             <EmployeeCountsTimeSeries 
               selectedEmployer={selectedEmployer}
