@@ -169,7 +169,52 @@ Jan Marxen, University of Luxembourg &amp; Sorbonne Université, <a href="mailto
 
 <p class="calibri"><b>3</b> - <span class="arial">Describe the health of the various employers within the city limits. What employment patterns do you observe? Do you notice any areas of particularly high or low turnover? Limit your response to 10 images and 500 words.</span></p>
 
-<p class="calibri"><b><i><span class="highlight">Provide your answer and corresponding images here.</span></i></b></p>
+<p>&nbsp;</p>
+
+<p class="calibri"><b>Answer:</b></p>
+
+<p class="calibri">We evaluated employer health in Engagement by analyzing workforce stability, turnover intensity, job-to-job mobility, and short-term workforce size changes. Our analysis focuses on March–April 2022, the only period in the dataset where job transitions were observed.</p>
+
+<p class="calibri"><b>Identifying Employers with Extreme Workforce Instability.</b> The Employer Turnover Ranking highlights pronounced differences in workforce change intensity among employers. Rather than representing the full employer population, the visualization focuses on the upper end of the distribution, revealing a subset of employers with exceptionally high turnover values. In several cases, turnover exceeds 100%, reflecting intensive workforce churn amplified by small average headcounts, where repeated employee exits strongly impact the turnover metric.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/employer_turnover_ranking.png" alt="Employer Turnover Ranking" style="max-width:90%; margin:10px;"><br>
+<i>Figure 1: Employer Turnover Ranking highlighting employers with the most intense workforce change activity.</i>
+</p>
+
+<p class="calibri">Employers ranking highest by turnover also tend to exhibit elevated quit counts and strongly negative net workforce change, indicating persistent outward movement rather than balanced hiring activity. This pattern suggests localized workforce instability during the observed period, characterized by repeated employee departures rather than short-term hiring spikes. Across the broader dataset, employers with lower turnover and minimal net workforce change display more stable employment behavior. While not all such employers are visible in the ranking view, their limited outward workforce movement and relatively consistent employee counts indicate comparatively stable organizational structures during the analyzed timeframe.</p>
+
+<p class="calibri"><b>Turnover vs. Tenure Patterns.</b> The Turnover Rate vs. Average Tenure scatterplot highlights a clear inverse relationship between tenure and turnover. Employers cluster into two dominant regimes: high turnover and low tenure employers form an instability zone, characterized by short job durations and frequent exits; low turnover and high tenure employers form a stability zone, where workers remain employed for longer periods with minimal churn. This separation suggests that workforce turnover is not evenly distributed across employers but instead concentrated among a specific subset of organizations.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/turnover_vs_tenure_scatterplot.png" alt="Turnover vs Tenure Scatterplot" style="max-width:90%; margin:10px;"><br>
+<i>Figure 2: Turnover Rate vs. Average Tenure, showing the inverse relationship between tenure stability and churn intensity.</i>
+</p>
+
+<p class="calibri"><b>Employer Stability Overview.</b> To integrate multiple indicators, we constructed an Employer Stability Overview bubble chart, encoding turnover, tenure, and workforce size simultaneously. This visualization reinforces the contrast between high-risk employers (high turnover, low tenure) and stable employers (low turnover, high tenure). Employers of varying sizes appear in both categories, indicating that workforce size alone does not determine stability. However, high-risk employers with larger headcounts combine scale with elevated churn, increasing their potential impact on overall labor market dynamics.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/employer_stability_overview.png" alt="Employer Stability Overview" style="max-width:90%; margin:10px;"><br>
+<i>Figure 3: Employer Stability Overview bubble chart: bubble size represents headcount, position encodes turnover and tenure, color indicates stability category.</i>
+</p>
+
+<p class="calibri"><b>Worker Mobility Between Employers.</b> The Job Flow Sankey diagram reveals strong asymmetries in worker movement between employers. A limited number of employers act primarily as sources of outgoing labor, while others function mainly as recipients. These directional flows illustrate how worker mobility links employers into a connected network, with instability at certain organizations contributing disproportionately to overall job transitions.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/job_flow_between_employers.png" alt="Job Flow Between Employers" style="max-width:90%; margin:10px;"><br>
+<i>Figure 4: Job Flow Sankey diagram showing worker transitions between employers, revealing which organizations are sources vs. destinations of labor.</i>
+</p>
+
+<p class="calibri"><b>Short-Term Workforce Growth and Decline.</b> The Employee Count Trends step-line chart shows that workforce size changes occur in short, concentrated bursts within the limited period where changes were recorded. Several employers experience abrupt increases followed by rapid contractions over a small number of days. Although the observed time window is short, these sharp fluctuations align with employers identified as high turnover, reinforcing the association between churn and short-term workforce volatility.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/employee_count_trends_plot.png" alt="Employee Count Trends" style="max-width:90%; margin:10px;"><br>
+<i>Figure 5: Employee Count Trends step-line chart showing workforce size changes over time, highlighting employers with rapid hiring and departure cycles.</i>
+</p>
+
+<p class="calibri"><b>Conclusion.</b> Overall, employer health in Engagement is highly uneven. A minority of employers exhibit pronounced instability, characterized by high turnover, low tenure, and strong outward workforce movement. In contrast, a larger group maintains relatively stable, long-term employment relationships. The concentration of turnover among specific employers suggests <b>targeted labor market stress rather than systemic instability across the city</b>. This pattern aligns with the resident financial stress observed in Question 2: households experiencing job instability are likely concentrated among the employees of these high-turnover employers.</p>
+
+<p class="calibri"><b>Visual Analytics Process.</b> We began with the <b>Employer Turnover Ranking</b> to identify which employers exhibited the most intense workforce churn. To understand the mechanisms behind turnover, we plotted <b>Turnover Rate vs. Average Tenure</b>, revealing that instability is driven by both high exit rates and short job durations. The <b>Employer Stability Overview</b> integrated tenure, turnover, and headcount into a single view, allowing us to distinguish stable organizations from those at risk. The <b>Job Flow Sankey diagram</b> provided crucial insights into labor market connectivity: by visualizing directional worker flows, we identified which employers disproportionately contribute to overall job transitions. Finally, the <b>Employee Count Trends</b> chart captured short-term volatility, showing that workforce instability manifests as sharp, concentrated hiring and departure cycles. Together, these linked views enabled us to pinpoint the subset of employers responsible for most of the labor market churn and assess their potential impact on resident financial stability.</p>
 
 <p>&nbsp;</p>
 
