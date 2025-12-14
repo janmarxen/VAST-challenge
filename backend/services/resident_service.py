@@ -12,6 +12,65 @@ from pathlib import Path
 # Global cache for data
 _DATA_CACHE = {}
 
+
+_EDUCATION_LEVEL_CATEGORIES = [
+    'Low',
+    'HighSchoolOrCollege',
+    'Bachelors',
+    'Graduate',
+    'Unknown',
+]
+
+
+def _coerce_have_kids_to_int(series: pd.Series) -> pd.Series:
+    if series is None:
+        return pd.Series(dtype='int64')
+
+    if series.dtype == bool:
+        return series.astype('int64')
+
+    text = series.astype(str).str.strip().str.lower()
+    truthy = {'true', 't', 'yes', 'y'}
+    falsy = {'false', 'f', 'no', 'n', 'none', 'nan', ''}
+
+    out = pd.Series(np.nan, index=series.index, dtype='float64')
+    out[text.isin(truthy)] = 1
+    out[text.isin(falsy)] = 0
+
+    remaining = out.isna()
+    if remaining.any():
+        numeric = pd.to_numeric(series[remaining], errors='coerce')
+        out.loc[remaining] = numeric.fillna(0).clip(0, 1)
+
+    return out.fillna(0).astype('int64')
+
+
+def _build_resident_cluster_features(merged: pd.DataFrame) -> pd.DataFrame:
+    """Build the feature matrix used for resident clustering.
+
+    Keeps the existing numeric features and adds:
+    - `haveKids` (0/1)
+    - One-hot encoded `educationLevel`
+    """
+    numeric_cols = ['age', 'householdSize', 'Income', 'CostOfLiving', 'Education', 'SavingsRate']
+    features = merged[numeric_cols].copy()
+
+    if 'Food' in merged.columns:
+        features['Food'] = merged['Food']
+    if 'Recreation' in merged.columns:
+        features['Recreation'] = merged['Recreation']
+
+    if 'haveKids' in merged.columns:
+        features['haveKids'] = _coerce_have_kids_to_int(merged['haveKids'])
+
+    if 'educationLevel' in merged.columns:
+        education = merged['educationLevel'].fillna('Unknown')
+        education = pd.Categorical(education, categories=_EDUCATION_LEVEL_CATEGORIES)
+        dummies = pd.get_dummies(education, prefix='educationLevel')
+        features = pd.concat([features, dummies], axis=1)
+
+    return features
+
 def _resolve_data_dirs():
     repo_root = Path(__file__).resolve().parents[2]
     if Path('/app/data').exists():
@@ -193,17 +252,15 @@ def _get_data():
     merged['SavingsRate'] = np.where(merged['Income'] > 0, merged['Savings'] / merged['Income'], 0)
     
     # Perform Clustering
-    # Features for clustering: Age, HouseholdSize, Income, CostOfLiving, Education, SavingsRate
-    features = merged[['age', 'householdSize', 'Income', 'CostOfLiving', 'Education', 'SavingsRate']].copy()
-    # Optionally add more: Food, Recreation
-    if 'Food' in merged.columns:
-        features['Food'] = merged['Food']
-    if 'Recreation' in merged.columns:
-        features['Recreation'] = merged['Recreation']
-    # Simple normalization
-    features = (features - features.mean()) / features.std()
-    # Fill NaNs if any
-    features = features.fillna(0)
+    # Features for clustering: existing numeric financial/demographic metrics
+    # plus one-hot encoded educationLevel and haveKids (0/1).
+    features = _build_resident_cluster_features(merged)
+
+    # Simple normalization (robust to constant columns)
+    means = features.mean(numeric_only=True)
+    stds = features.std(numeric_only=True).replace(0, 1)
+    features = (features - means) / stds
+    features = features.replace([np.inf, -np.inf], np.nan).fillna(0)
     
     kmeans = KMeans(n_clusters=3, random_state=42)
     merged['Cluster'] = kmeans.fit_predict(features)
