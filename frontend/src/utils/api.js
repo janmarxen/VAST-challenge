@@ -123,22 +123,37 @@ export const fetchParallelCoordinates = (paramsObj = {}) => {
 
 // Employer API endpoints
 export const fetchTurnoverHeatmap = () => {
-  return axios.get(`${API_BASE_URL}/employer/turnover-heatmap`)
+  return axios.get(`${API_BASE_URL}/employers/turnover-heatmap`)
     .then(response => response.data);
 };
 
 export const fetchJobFlow = (timePeriod) => {
   const params = timePeriod ? `?time_period=${timePeriod}` : '';
-  return axios.get(`${API_BASE_URL}/employer/job-flow${params}`)
+  return axios.get(`${API_BASE_URL}/employers/job-flows${params}`)
     .then(response => response.data);
 };
 
 export const fetchTransitionNetwork = () => {
-  return axios.get(`${API_BASE_URL}/employer/transition-network`)
+  return axios.get(`${API_BASE_URL}/employers/transition-network`)
     .then(response => response.data);
 };
 
 export const fetchTurnoverDistribution = () => {
-  return axios.get(`${API_BASE_URL}/employer/turnover-distribution`)
+  return axios.get(`${API_BASE_URL}/employers/turnover-distribution`)
+    .then(response => response.data);
+};
+
+export const fetchEmployerMeta = () => {
+  return axios.get(`${API_BASE_URL}/employers/meta`)
+    .then(response => response.data);
+};
+
+export const fetchEmployeeCounts = () => {
+  return axios.get(`${API_BASE_URL}/employers/employee-counts`)
+    .then(response => response.data);
+};
+
+export const fetchTenure = () => {
+  return axios.get(`${API_BASE_URL}/employers/tenure`)
     .then(response => response.data);
 };

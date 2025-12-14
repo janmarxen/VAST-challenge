@@ -1,74 +1,138 @@
 """
-Employer Health & Turnover API Router
-Handles Question 3: Employment patterns and turnover analysis
+Employer API Router
 
-Endpoints:
-- GET /api/employer/turnover-heatmap: Turnover rates by employer and time
-- GET /api/employer/job-flow: Job transition flow data for Sankey diagram
-- GET /api/employer/transition-network: Network graph data for job transitions
-- GET /api/employer/turnover-distribution: Statistical distribution by industry
+Routes under `/api/employers/*`.
+
+Follows the same structure and error-handling style as `resident_router.py`.
 """
 from flask import Blueprint, jsonify, request
 from services.employer_service import (
     get_turnover_heatmap_data,
     get_job_flow_data,
     get_transition_network_data,
-    get_turnover_distribution
+    get_turnover_distribution,
+    get_employer_meta_data,
+    get_employee_counts_data,
+    get_tenure_data,
+    get_city_metrics,
+    get_employer_market_share_data,
+    get_geographic_turnover_data,
+    get_employer_financials,
 )
 
-bp = Blueprint('employer', __name__)
+employer_bp = Blueprint('employer', __name__)
 
-@bp.route('/turnover-heatmap', methods=['GET'])
+
+@employer_bp.route('/api/employers/financials', methods=['GET'])
+def financials():
+    """Return employer financial estimates."""
+    try:
+        data = get_employer_financials()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@employer_bp.route('/api/employers/geographic-turnover', methods=['GET'])
+def geographic_turnover():
+    """Return geographic turnover data."""
+    try:
+        month = request.args.get('month')
+        fill_missing = request.args.get('fill_missing', 'false').lower() in ('1', 'true', 'yes')
+        data = get_geographic_turnover_data(month=month, fill_missing=fill_missing)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@employer_bp.route('/api/employers/market-share', methods=['GET'])
+def market_share():
+    """Return employer market share data (monthly avg employment)."""
+    try:
+        data = get_employer_market_share_data()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@employer_bp.route('/api/employers/city-metrics', methods=['GET'])
+def city_metrics():
+    """Return aggregated city-wide metrics per month."""
+    try:
+        data = get_city_metrics()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@employer_bp.route('/api/employers/turnover-heatmap', methods=['GET'])
 def turnover_heatmap():
-    """
-    Get turnover rate matrix for heatmap visualization.
-    
-    Returns: employers x months matrix with turnover rates
-    """
+    """Return turnover heatmap data."""
     try:
-        data = get_turnover_heatmap_data()
+        month = request.args.get('month')
+        fill_missing = request.args.get('fill_missing', 'false').lower() in ('1', 'true', 'yes')
+        data = get_turnover_heatmap_data(month=month, fill_missing=fill_missing)
         return jsonify(data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/job-flow', methods=['GET'])
-def job_flow():
-    """
-    Get job transition flow data for Sankey/Alluvial diagram.
-    
-    Query params:
-    - time_period: Optional, filter by quarter (Q1, Q2, etc.)
-    """
-    time_period = request.args.get('time_period')
-    
+
+@employer_bp.route('/api/employers/job-flows', methods=['GET'])
+def job_flows():
+    """Return job flow (Sankey) data."""
+    # Optional query params can be forwarded to service later
     try:
-        data = get_job_flow_data(time_period)
+        data = get_job_flow_data()
         return jsonify(data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/transition-network', methods=['GET'])
+
+@employer_bp.route('/api/employers/transition-network', methods=['GET'])
 def transition_network():
-    """
-    Get network graph data for job transitions.
-    
-    Returns: nodes (employers) and edges (transitions with weights)
-    """
+    """Return transition network graph data."""
     try:
         data = get_transition_network_data()
         return jsonify(data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@bp.route('/turnover-distribution', methods=['GET'])
+
+@employer_bp.route('/api/employers/turnover-distribution', methods=['GET'])
 def turnover_distribution():
-    """
-    Get turnover rate distribution statistics by employer category.
-    
-    Returns: boxplot data (median, Q1, Q3, outliers) per category
-    """
+    """Return turnover distribution statistics."""
     try:
         data = get_turnover_distribution()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@employer_bp.route('/api/employers/meta', methods=['GET'])
+def employer_meta():
+    """Return employer metadata (location, building, etc)."""
+    try:
+        data = get_employer_meta_data()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@employer_bp.route('/api/employers/employee-counts', methods=['GET'])
+def employee_counts():
+    """Return daily employee counts by employer."""
+    try:
+        data = get_employee_counts_data()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@employer_bp.route('/api/employers/tenure', methods=['GET'])
+def tenure():
+    """Return tenure statistics by employer."""
+    try:
+        data = get_tenure_data()
         return jsonify(data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

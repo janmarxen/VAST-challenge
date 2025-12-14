@@ -123,53 +123,114 @@ Jan Marxen, University of Luxembourg &amp; Sorbonne Université, <a href="mailto
 
 <p class="calibri"><b>Answer:</b></p>
 
-<p class="calibri">We analyzed resident financial health through three lenses: geographic distribution, demographic disparities, and expense trajectories.</p>
-
-<p class="calibri"><b>Geographic Financial Health.</b> A building-level heatmap reveals <b>scattered "red pockets" of low savings</b> across Engagement. Comparing snapshots (Figures 1 & 2) shows these zones are <b>persistent rather than expanding</b>, indicating <b>chronic financial stress</b> in specific neighborhoods rather than a city-wide decline.</p>
-
-<p class="calibri" style="text-align:center;">
-<img src="./img/geog_fin_health_beginning.png" alt="Geographic Financial Health Beginning" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;">
-<img src="./img/geog_fin_health.png" alt="Geographic Financial Health Later" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;"><br>
-<i>Figure 1 (left): Geographic financial health at the start of the period. Figure 2 (right): Geographic financial health later in the dataset.</i>
+<p class="calibri">
+We looked at resident financial health from three angles: where financial stress concentrates in the city, which household groups are closer to (or past) break-even, and how income/expenses/inequality evolve over time.
 </p>
 
-<p class="calibri"><b>Wages vs. Cost of Living.</b> The "Living Gap" scatter plot (Figure 3) shows most residents save money, but a visible band hugs the break-even line. Filtering reveals that <b>families with children sit closer to the break-even threshold</b> than singles or couples without children, despite often having similar incomes (Figures 4 & 5).</p>
-
-<p class="calibri" style="text-align:center;">
-<img src="./img/living_gap_all.png" alt="Living Gap All Residents" style="max-width:90%; margin:10px;"><br>
-<i>Figure 3: All residents.</i><br><br>
-<img src="./img/living_gap_w_child.png" alt="Living Gap With Children" style="max-width:90%; margin:10px;"><br>
-<i>Figure 4: Families with children.</i><br><br>
-<img src="./img/living_gap_wo_child.png" alt="Living Gap Without Children" style="max-width:90%; margin:10px;"><br>
-<i>Figure 5: Households without children.</i>
-</p>
-
-<p class="calibri"><b>Cluster Patterns.</b> K-Means clustering identifies three profiles (Figure 6): <b>Affluent Achievers</b> (high income, high savings), <b>Stretched Households</b> (low income, low savings), and <b>Lean Savers</b> (average income, low costs). We also found that <b>education level is highly correlated with savings rates</b> (Figure 7), with graduates saving significantly more than those with lower education.</p>
-
-<p class="calibri" style="text-align:center;">
-<img src="./img/demographic_parallel_plot.png" alt="Parallel Coordinates Clusters" style="max-width:55%; margin:10px;"><img src="./img/demographic_savings_rates.png" alt="Savings by Demographics" style="max-width:28%; margin:10px;"><br>
-<i>Figure 6 (left): Parallel coordinates showing cluster profiles. Figure 7 (right): Savings rates by education and household size.</i>
-</p>
-
-<p class="calibri"><b>Expense Trajectories & Inequality.</b> A stacked area chart (Figure 8) tracks average monthly income (dashed line) against cumulative expenses. While income and expenses follow a cyclical pattern, <b>a significant drop in both salary and expenses is visible in the final months (April–May 2023)</b>, suggesting a potential economic downturn. To measure disparity, we compute the Gini coefficient (Figure 10). <b>Income inequality remains stable</b>, whereas <b>savings inequality fluctuates strongly (0.1–0.22)</b>. This indicates that <b>inequality shifts are driven by expenditure behavior rather than salary differences</b>, which remain constant relative to each other.</p>
-
-<p class="calibri" style="text-align:center;">
-<img src="./img/financial_flow.png" alt="Financial Flow Over Time" style="max-width:55%; margin:5px;"><img src="./img/financial_flow_expenses_static.png" alt="City-wide Expenses" style="max-width:30%; margin:5px;"><br>
-<i>Figure 8 (left): Income vs. stacked expenses over time. Figure 9 (right): City-wide expense breakdown.</i>
+<p class="calibri">
+<b>Geographic Financial Health.</b> The building-level heatmap shows scattered “red pockets” of low savings across Engagement (Figures 1 &amp; 2). Comparing the early vs. later snapshot (Figure 1 vs. Figure 2) suggests these pockets are persistent rather than spreading, which points to chronic, neighborhood-level strain instead of a city-wide decline. A useful way to read this view is as a spatial “hotspot” scan: the pattern is uneven, but also stable.
 </p>
 
 <p class="calibri" style="text-align:center;">
-<img src="./img/inequality_timeline.png" alt="Inequality Timeline" style="max-width:60%; margin:10px;"><br>
-<i>Figure 10: Gini coefficient for income (blue) and savings rate (red) over time. The formula G = (2 * sum(i * yi)) / (n * sum(yi)) - (n+1)/n measures inequality from 0 (equal) to 1 (unequal).</i>
+  <img src="./img/geog_fin_health_beginning.png" alt="Geographic Financial Health Beginning" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;">
+  <img src="./img/geog_fin_health.png" alt="Geographic Financial Health Later" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;"><br>
+  <i>Figure 1 (left): Geographic financial health at the start of the period. Figure 2 (right): Geographic financial health later in the dataset.</i>
 </p>
 
-<p class="calibri"><b>Conclusion.</b> Financial health in Engagement is <b>stable on aggregate but uneven</b>. The <b>strongest predictor of financial strain is household structure</b>: families with children face higher fixed costs. <b>Standards of living appear stagnant</b>, with a concerning dip in economic activity at the end of the period. Geographic hotspots of low savings persist over time, suggesting targeted interventions could have outsized impact on the most vulnerable residents.</p>
+<p class="calibri">
+<b>Wages vs. Cost of Living.</b> The Living Gap scatter plot (Figure 3) puts wages against total living costs and makes the break-even line an immediate reference point. Most residents sit on the surplus side, but the dense band near break-even suggests many households have only a thin “buffer” month to month (Figure 3). When filtering by household type, families with children cluster noticeably closer to break-even than households without children (Figures 4 &amp; 5), even when incomes overlap—consistent with higher fixed costs.
+</p>
 
-<p class="calibri"><b>Visual Analytics Process.</b> We started with a simple <b>Wage vs. Cost of Living scatterplot</b> to separate residents running a surplus from those in deficit. To explain the patterns we saw, we used <b>bidirectional brushing</b> to link this view with a <b>Parallel Coordinates Plot</b>, allowing us to select outliers and immediately inspect their demographics. We also applied <b>K-Means clustering</b> to define resident personas, which helped us analyze how specific household types evolved over time. For categorical variables, <b>dynamic bar charts</b> showing savings rates were essential for spotting correlations. We could have added those variables to the parallel plot, but this would have cluttered the view. We also added a <b>"With Children" toggle</b>, which instantly highlighted the cost-of-living penalty for families. To quantify inequality, we calculated the <b>Gini index</b>, giving us a concrete metric for financial disparity. All these views are synchronized via a <b>global time control bar</b>, enabling us to scrub through the timeline and observe temporal shifts. Finally, we excluded the first month of data due to anomalous "rent adjustments" that skewed the trends without adding analytical value.</p>
+<p class="calibri" style="text-align:center;">
+  <img src="./img/living_gap_all.png" alt="Living Gap All Residents" style="max-width:90%; margin:10px;"><br>
+  <i>Figure 3: All residents.</i><br><br>
+  <img src="./img/living_gap_w_child.png" alt="Living Gap With Children" style="max-width:90%; margin:10px;"><br>
+  <i>Figure 4: Families with children.</i><br><br>
+  <img src="./img/living_gap_wo_child.png" alt="Living Gap Without Children" style="max-width:90%; margin:10px;"><br>
+  <i>Figure 5: Households without children.</i>
+</p>
+
+<p class="calibri">
+<b>Cluster Patterns.</b> Using k-means, we get three recurring “financial personas” (Figure 6): <b>Affluent Achievers</b> (high income, high savings), <b>Stretched Households</b> (low income, low savings), and <b>Lean Savers</b> (average income, low costs). The parallel coordinates plot (Figure 6) is helpful here because it shows multivariate profiles (income + multiple expense dimensions + savings) instead of forcing a single x–y story. The demographic bars (Figure 7) support the rationale: education level lines up with higher savings rates, whereas households size does not seem to have big impact on savings (Figure 7).
+</p>
+
+<p class="calibri" style="text-align:center;">
+  <img src="./img/demographic_parallel_plot.png" alt="Parallel Coordinates Clusters" style="max-width:55%; margin:10px;">
+  <img src="./img/demographic_savings_rates.png" alt="Savings by Demographics" style="max-width:28%; margin:10px;"><br>
+  <i>Figure 6 (left): Parallel coordinates showing cluster profiles. Figure 7 (right): Savings rates by education and household size.</i>
+</p>
+
+<p class="calibri">
+<b>Expense Trajectories &amp; Inequality.</b> The stacked area chart (Figure 8) tracks average monthly income (dashed line) versus the composition of expenses, making it easy to spot both seasonality and shifts in spending mix. The visible drop in both salary and expenses in the final months (April–May 2023) suggests a potential slowdown rather than just households “overspending” (Figure 8). Looking at the citywide expense composition (Figure 9) helps explain what likely drives pressure for near break-even residents: small changes in big categories can erase an already-small surplus (Figure 9). Finally, the inequality timeline (Figure 10) shows relatively stable income inequality but more volatile savings inequality, which hints that inequality changes are driven more by expense behavior and shocks than by wages drifting apart (Figure 10).
+</p>
+
+<p class="calibri" style="text-align:center;">
+  <img src="./img/financial_flow.png" alt="Financial Flow Over Time" style="max-width:55%; margin:5px;">
+  <img src="./img/financial_flow_expenses_static.png" alt="City-wide Expenses" style="max-width:30%; margin:5px;"><br>
+  <i>Figure 8 (left): Income vs. stacked expenses over time. Figure 9 (right): City-wide expense breakdown.</i>
+</p>
+
+<p class="calibri" style="text-align:center;">
+  <img src="./img/inequality_timeline.png" alt="Inequality Timeline" style="max-width:60%; margin:10px;"><br>
+  <i>Figure 10: Gini coefficient for income (blue) and savings rate (red) over time. The formula G = (2 * sum(i * yi)) / (n * sum(yi)) - (n+1)/n measures inequality from 0 (equal) to 1 (unequal).</i>
+</p>
+
+<p class="calibri">
+<b>Why this design works.</b> These figures act as coordinated multiple views: map for spatial concentration (Figures 1–2), scatter for trade-offs and outliers (Figures 3–5), parallel coordinates for multivariate profiling (Figure 6), and timelines for trends and shocks (Figures 8–10). With brushing-and-linking, selecting a subgroup in one view and seeing it highlighted everywhere else makes the “same residents, different angles” story much easier to validate.
+</p>
+
+<p class="calibri">
+<b>Conclusion.</b> Financial health in Engagement is stable on aggregate but uneven: the strongest, most consistent strain signal comes from household structure, especially families with children sitting near break-even (Figures 4–5). The end-of-period dip (Figure 8) is the main temporal warning sign, while persistent geographic hotspots (Figures 1–2) suggest that targeted neighborhood interventions could have outsized impact. Savings inequality swings more than income inequality (Figure 10), reinforcing the idea that spending pressures (not just wages) shape who falls behind.
+</p>
 
 <p class="calibri"><b>3</b> - <span class="arial">Describe the health of the various employers within the city limits. What employment patterns do you observe? Do you notice any areas of particularly high or low turnover? Limit your response to 10 images and 500 words.</span></p>
 
-<p class="calibri"><b><i><span class="highlight">Provide your answer and corresponding images here.</span></i></b></p>
+<p>&nbsp;</p>
+
+<p class="calibri"><b>Answer:</b></p>
+
+<p class="calibri">We evaluated employer health in Engagement by analyzing workforce stability, turnover intensity, job-to-job mobility, and short-term workforce size changes. Our analysis focuses on March–April 2022, the only period in the dataset where job transitions were observed.</p>
+
+<p class="calibri"><b>Identifying Employers with Extreme Workforce Instability.</b> The Employer Turnover Ranking highlights pronounced differences in workforce change intensity among employers. Rather than representing the full employer population, the visualization focuses on the upper end of the distribution, revealing a subset of employers with exceptionally high turnover values. In several cases, turnover exceeds 100%, reflecting intensive workforce churn amplified by small average headcounts, where repeated employee exits strongly impact the turnover metric.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/employer_turnover_ranking.png" alt="Employer Turnover Ranking" style="max-width:90%; margin:10px;"><br>
+<i>Figure 1: Employer Turnover Ranking highlighting employers with the most intense workforce change activity.</i>
+</p>
+
+<p class="calibri">Employers ranking highest by turnover also tend to exhibit elevated quit counts and strongly negative net workforce change, indicating persistent outward movement rather than balanced hiring activity. This pattern suggests localized workforce instability during the observed period, characterized by repeated employee departures rather than short-term hiring spikes. Across the broader dataset, employers with lower turnover and minimal net workforce change display more stable employment behavior. While not all such employers are visible in the ranking view, their limited outward workforce movement and relatively consistent employee counts indicate comparatively stable organizational structures during the analyzed timeframe.</p>
+
+<p class="calibri"><b>Turnover vs. Tenure Patterns.</b> The Turnover Rate vs. Average Tenure scatterplot highlights a clear inverse relationship between tenure and turnover. Employers cluster into two dominant regimes: high turnover and low tenure employers form an instability zone, characterized by short job durations and frequent exits; low turnover and high tenure employers form a stability zone, where workers remain employed for longer periods with minimal churn. This separation suggests that workforce turnover is not evenly distributed across employers but instead concentrated among a specific subset of organizations.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/turnover_vs_tenure_scatterplot.png" alt="Turnover vs Tenure Scatterplot" style="max-width:90%; margin:10px;"><br>
+<i>Figure 2: Turnover Rate vs. Average Tenure, showing the inverse relationship between tenure stability and churn intensity.</i>
+</p>
+
+<p class="calibri"><b>Employer Stability Overview.</b> To integrate multiple indicators, we constructed an Employer Stability Overview bubble chart, encoding turnover, tenure, and workforce size simultaneously. This visualization reinforces the contrast between high-risk employers (high turnover, low tenure) and stable employers (low turnover, high tenure). Employers of varying sizes appear in both categories, indicating that workforce size alone does not determine stability. However, high-risk employers with larger headcounts combine scale with elevated churn, increasing their potential impact on overall labor market dynamics.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/employer_stability_overview.png" alt="Employer Stability Overview" style="max-width:90%; margin:10px;"><br>
+<i>Figure 3: Employer Stability Overview bubble chart: bubble size represents headcount, position encodes turnover and tenure, color indicates stability category.</i>
+</p>
+
+<p class="calibri"><b>Worker Mobility Between Employers.</b> The Job Flow Sankey diagram reveals strong asymmetries in worker movement between employers. A limited number of employers act primarily as sources of outgoing labor, while others function mainly as recipients. These directional flows illustrate how worker mobility links employers into a connected network, with instability at certain organizations contributing disproportionately to overall job transitions.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/job_flow_between_employers.png" alt="Job Flow Between Employers" style="max-width:90%; margin:10px;"><br>
+<i>Figure 4: Job Flow Sankey diagram showing worker transitions between employers, revealing which organizations are sources vs. destinations of labor.</i>
+</p>
+
+<p class="calibri"><b>Short-Term Workforce Growth and Decline.</b> The Employee Count Trends step-line chart shows that workforce size changes occur in short, concentrated bursts within the limited period where changes were recorded. Several employers experience abrupt increases followed by rapid contractions over a small number of days. Although the observed time window is short, these sharp fluctuations align with employers identified as high turnover, reinforcing the association between churn and short-term workforce volatility.</p>
+
+<p class="calibri" style="text-align:center;">
+<img src="./img/employee_count_trends_plot.png" alt="Employee Count Trends" style="max-width:90%; margin:10px;"><br>
+<i>Figure 5: Employee Count Trends step-line chart showing workforce size changes over time, highlighting employers with rapid hiring and departure cycles.</i>
+</p>
+
+<p class="calibri"><b>Conclusion.</b> Overall, employer health in Engagement is highly uneven. A minority of employers exhibit pronounced instability, characterized by high turnover, low tenure, and strong outward workforce movement. In contrast, a larger group maintains relatively stable, long-term employment relationships. The concentration of turnover among specific employers suggests <b>targeted labor market stress rather than systemic instability across the city</b>. This pattern aligns with the resident financial stress observed in Question 2: households experiencing job instability are likely concentrated among the employees of these high-turnover employers.</p>
+
+<p class="calibri"><b>Visual Analytics Process.</b> We began with the <b>Employer Turnover Ranking</b> to identify which employers exhibited the most intense workforce churn. To understand the mechanisms behind turnover, we plotted <b>Turnover Rate vs. Average Tenure</b>, revealing that instability is driven by both high exit rates and short job durations. The <b>Employer Stability Overview</b> integrated tenure, turnover, and headcount into a single view, allowing us to distinguish stable organizations from those at risk. The <b>Job Flow Sankey diagram</b> provided crucial insights into labor market connectivity: by visualizing directional worker flows, we identified which employers disproportionately contribute to overall job transitions. Finally, the <b>Employee Count Trends</b> chart captured short-term volatility, showing that workforce instability manifests as sharp, concentrated hiring and departure cycles. Together, these linked views enabled us to pinpoint the subset of employers responsible for most of the labor market churn and assess their potential impact on resident financial stability.</p>
 
 <p>&nbsp;</p>
 
