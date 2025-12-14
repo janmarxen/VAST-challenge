@@ -212,55 +212,107 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{The ``Living Gap'' Analysis}
-    \vspace{-3pt}
-    \begin{columns}[T]
-        \begin{column}{0.48\textwidth}
-            \centering
-            \textbf{With Children}\\[3pt]
-            \includegraphics[width=\textwidth,height=0.55\textheight,keepaspectratio]{img/living_gap_w_child.png}
-        \end{column}
-        \begin{column}{0.48\textwidth}
-            \centering
-            \textbf{Without Children}\\[3pt]
-            \includegraphics[width=\textwidth,height=0.55\textheight,keepaspectratio]{img/living_gap_wo_child.png}
-        \end{column}
-    \end{columns}
-    \vspace{3pt}
-    \footnotesize
-    \centering
-    Diagonal = break-even $\bullet$ Families with children cluster near the line $\bullet$ Singles have more margin
-\end{frame}
-
-\begin{frame}{Cluster Patterns: Three Resident Profiles}
+\begin{frame}{Resident Profiles: Three Demographic Groups}
     \begin{columns}[T]
         \begin{column}{0.38\textwidth}
-            \textbf{K-Means Clustering}
-            \vspace{3pt}
             \footnotesize
-            
-            \textcolor{red!70!black}{\textbf{Affluent Achievers}}
-            \begin{itemize}\setlength{\itemsep}{0pt}
-                \item High incomes, controlled costs
-            \end{itemize}
-            
+            	\textbf{KMeans on demographics}
             \vspace{2pt}
-            \textcolor{blue!70!black}{\textbf{Stretched Households}}
+
+            {\color{red!70!black}\bfseries Affluent Achievers}
             \begin{itemize}\setlength{\itemsep}{0pt}
-                \item Lower income, little room to save
+                \item High income
+                \item Often graduate education
             \end{itemize}
-            
-            \vspace{2pt}
-            \textcolor{orange!70!black}{\textbf{Lean Savers}}
+
+            \vspace{1pt}
+            {\color{blue!70!black}\bfseries Stretched Households}
             \begin{itemize}\setlength{\itemsep}{0pt}
-                \item Singles, average income, low costs
+                \item Often with kids
+                \item Larger households
+                \item Low savings capacity
+            \end{itemize}
+
+            \vspace{1pt}
+            {\color{orange!70!black}\bfseries Lean Savers}
+            \begin{itemize}\setlength{\itemsep}{0pt}
+                \item Typically without kids
+                \item Smaller households
+                \item Lower cost base
+            \end{itemize}
+
+            \vspace{2pt}
+            \scriptsize
+            	\textbf{Top separators ($\eta^2$)}
+            \begin{itemize}\setlength{\itemsep}{0pt}
+                \item Has kids 83.1\% \quad Graduate education 72.0\%
+                \item Household size 61.9\% \quad Income 38.0\%
             \end{itemize}
         \end{column}
         \begin{column}{0.60\textwidth}
             \centering
-            \includegraphics[width=\textwidth,height=0.88\textheight,keepaspectratio]{img/demographic_parallel_plot.png}
+            \includegraphics[width=\textwidth,height=0.67\textheight,keepaspectratio]{img/demographic_parallel_plot.png}
         \end{column}
     \end{columns}
+\end{frame}
+
+\begin{frame}{Demographic Drivers (Ranked)}
+    \vspace{-2pt}
+    \begin{columns}[T]
+        \begin{column}{0.52\textwidth}
+            \footnotesize
+            	\textbf{SavingsRate predictors ($\Delta R^2$)}
+            \vspace{1pt}
+            \scriptsize
+            \begin{tabular}{@{}ll@{}}
+                \mbox{1. Cost of living 0.828} & \mbox{2. Income 0.408}\\
+                \mbox{3. Household size 0.376} & \mbox{4. Has kids 0.127}
+            \end{tabular}
+
+            \vspace{5pt}
+            \footnotesize
+            	\textbf{Cluster separators ($\eta^2$)}
+            \vspace{1pt}
+            \scriptsize
+            \begin{tabular}{@{}ll@{}}
+                \mbox{Has kids 83.1\%} & \mbox{Graduate education 72.0\%}\\
+                \mbox{Household size 61.9\%} & \mbox{Income 38.0\%}
+            \end{tabular}
+        \end{column}
+        \begin{column}{0.44\textwidth}
+            \footnotesize
+            	\textbf{Story}
+            \begin{itemize}\setlength{\itemsep}{2pt}
+                \item Costs dominate short-run savings rate
+                \item Income raises buffer and resilience
+                \item Kids and education define the main splits
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{The ``Living Gap'': Kids Compress the Margin}
+    \vspace{-4pt}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \centering
+            	\textbf{With Children}\\[3pt]
+            \includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{img/living_gap_w_child.png}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \centering
+            	\textbf{Without Children}\\[3pt]
+            \includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{img/living_gap_wo_child.png}
+        \end{column}
+    \end{columns}
+
+    \vspace{2pt}
+    \footnotesize
+    \begin{itemize}\setlength{\itemsep}{1pt}
+        \item Diagonal: break-even (income = cost)
+        \item With kids: points concentrate near the diagonal
+        \item Without kids: more margin above break-even
+    \end{itemize}
 \end{frame}
 
 \begin{frame}{Savings Drivers: Household Size vs. Education}
@@ -281,8 +333,9 @@
     \vspace{4pt}
     \footnotesize
     \begin{itemize}\setlength{\itemsep}{2pt}
-        \item Household size shows only minor differences in savings behavior.
-        \item Education level shows a clearer pattern: higher education is associated with higher savings and greater financial resilience.
+        \item Household size: weak pattern (\,$\approx$54\% for 1--3 persons\,)
+        \item Education: strong gradient (Graduate $>$ Bachelors $\gg$ High School/Low)
+        \item Interpretation: income + cost-of-living explain most variation; kids adds pressure
     \end{itemize}
 \end{frame}
 

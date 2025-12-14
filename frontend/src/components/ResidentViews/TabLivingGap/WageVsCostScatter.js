@@ -7,7 +7,7 @@ import { CLUSTER_COLOR_RANGE, getSortedClusterDomain } from '../colorHelpers';
  * Wage vs Cost of Living Scatter Plot
  * Shows relationship between wages and living costs
  */
-function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedIds, brushedTimeRange }) {
+function WageVsCostScatter({ onFilter, filterHaveKids, filterCluster, selectedMonth, selectedIds, brushedTimeRange }) {
   const containerRef = useRef();
   const svgRef = useRef();
   const [data, setData] = useState([]);
@@ -75,6 +75,7 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedId
 
   useEffect(() => {
     if (!data.length) return;
+    // IMPORTANT: Keep cluster->color mapping stable even when filtering to a single cluster.
     const domain = getSortedClusterDomain(data.map(d => d.Cluster));
     colorScaleRef.current.domain(domain);
   }, [data]);
@@ -96,10 +97,23 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedId
     // User requested capping Cost of Living at ~4000 AND filtering data
     const xMax = 4000; 
     
-    // Filter data points that exceed the xMax
-    const filteredData = data.filter(d => d.CostOfLiving <= xMax);
+    // Base cohort for scale domains: apply xMax + haveKids only.
+    // This keeps axes stable when switching cluster filters.
+    const domainData = data.filter(d => {
+      if (d.CostOfLiving > xMax) return false;
+      if (filterHaveKids === null || filterHaveKids === undefined) return true;
+      return d.haveKids === filterHaveKids;
+    });
+
+    // Visible points: apply xMax + haveKids + cluster.
+    const filteredData = data.filter(d => {
+      if (d.CostOfLiving > xMax) return false;
+      if (filterHaveKids !== null && filterHaveKids !== undefined && d.haveKids !== filterHaveKids) return false;
+      if (filterCluster === null || filterCluster === undefined) return true;
+      return Number(d.Cluster) === Number(filterCluster);
+    });
     
-    const yExtent = d3.extent(filteredData, d => d.Income);
+    const yExtent = d3.extent(domainData, d => d.Income);
     const yMax = yExtent[1] || 0;
 
     const xScale = d3.scaleLinear()
@@ -200,29 +214,10 @@ function WageVsCostScatter({ onFilter, filterHaveKids, selectedMonth, selectedId
       if (onFilter) onFilter(selectedIds);
     }
 
-  }, [data, onFilter, dimensions]); // Removed selectedIds from here, handled in separate effect
+  }, [data, onFilter, dimensions, filterCluster, filterHaveKids]);
 
-  // Handle filterHaveKids changes by updating the selection
-  // Use a ref to track if the filter actually changed, to avoid resetting on data reload
-  const prevFilterHaveKids = useRef(filterHaveKids);
-
-  useEffect(() => {
-    if (!data.length) return;
-    
-    // Only proceed if the filter value actually changed
-    if (prevFilterHaveKids.current === filterHaveKids) {
-        return;
-    }
-    prevFilterHaveKids.current = filterHaveKids;
-
-    // Only trigger if filterHaveKids is actively set or unset
-    if (filterHaveKids === null) {
-       onFilter(null);
-    } else {
-       const ids = data.filter(d => d.haveKids === filterHaveKids).map(d => d.participantId);
-       onFilter(ids);
-    }
-  }, [filterHaveKids, data]); // Removed onFilter from deps to avoid loops if onFilter is unstable, but it should be fine.
+  // NOTE: filterHaveKids is treated as a cohort filter (not a massive selection),
+  // so density controls in the PCP remain meaningful.
 
   // Handle visual updates based on selectedIds (from any source)
   useEffect(() => {

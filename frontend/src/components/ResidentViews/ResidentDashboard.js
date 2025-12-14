@@ -8,6 +8,7 @@ import CityWideExpenses from './TabFinancialFlow/CityWideExpenses';
 import SavingsRateByEducation from './TabLivingGap/SavingsRateByEducation';
 import HouseholdSizeStats from './TabLivingGap/HouseholdSizeStats';
 import InequalityTimeline from './TabFinancialFlow/InequalityTimeline';
+import { CLUSTER_OPTIONS, normalizeClusterValue } from './clusterHelpers';
 
 /**
  * Resident Financial Health Dashboard (Question 2)
@@ -17,12 +18,47 @@ function ResidentDashboard() {
   const [selectedIds, setSelectedIds] = useState(null);
   const [activeTab, setActiveTab] = useState(1);
   const [filterHaveKids, setFilterHaveKids] = useState(null);
+  const [filterCluster, setFilterCluster] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState('2022-04');
   const [brushedTimeRange, setBrushedTimeRange] = useState(null);
   const [showFloatingTimeControl, setShowFloatingTimeControl] = useState(false);
   const timeControlRef = useRef(null);
   const [driverStats, setDriverStats] = useState(null);
   const [driverStatsError, setDriverStatsError] = useState(null);
+
+  const formatDriverFeatureLabel = (feature) => {
+    if (!feature) return '';
+    if (feature === 'haveKids') return 'Has kids';
+    if (feature === 'householdSize') return 'Household size';
+    if (feature === 'age') return 'Age';
+    if (feature === 'Income') return 'Income';
+    if (feature === 'CostOfLiving') return 'Cost of living';
+    if (feature === 'Education') return 'Education spending';
+    if (feature === 'Food') return 'Food spending';
+    if (feature === 'SavingsRate') return 'Savings rate';
+    if (feature === 'educationLevel') return 'Education level';
+
+    if (feature.startsWith('educationLevel_')) {
+      const level = feature.replace('educationLevel_', '');
+      const pretty = {
+        Low: 'Low',
+        HighSchoolOrCollege: 'High school / college',
+        Bachelors: "Bachelor's",
+        Graduate: 'Graduate',
+        Unknown: 'Unknown',
+      };
+      return `Education: ${pretty[level] || level}`;
+    }
+
+    const prettyFallback = String(feature)
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!prettyFallback) return String(feature);
+    return prettyFallback.charAt(0).toUpperCase() + prettyFallback.slice(1);
+  };
 
   // Exclude the first month (2022-03) from the analysis per backend filtering
   const months = [
@@ -88,7 +124,7 @@ function ResidentDashboard() {
     let isMounted = true;
     setDriverStatsError(null);
     axios
-      .get('/api/resident/driver-stats?top_n=3')
+      .get('/api/resident/driver-stats?top_n=4')
       .then((resp) => {
         if (!isMounted) return;
         setDriverStats(resp.data);
@@ -135,6 +171,16 @@ function ResidentDashboard() {
     setFilterHaveKids(prev => (prev === value ? null : value));
   };
 
+  useEffect(() => {
+    // Keep dashboard interactions predictable when cohort changes.
+    setSelectedIds(null);
+  }, [filterCluster]);
+
+  useEffect(() => {
+    // Cohort filter: don't convert this into a massive selection.
+    setSelectedIds(null);
+  }, [filterHaveKids]);
+
   const renderTab1 = () => (
     <div className="space-y-8">
       {/* Text Section */}
@@ -180,13 +226,13 @@ function ResidentDashboard() {
           <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
             <h4 className="font-semibold text-emerald-900 mb-1">Key discriminator: household structure</h4>
             <p>
-              The strongest split is <strong>with vs. without children</strong>. Single adults and couples without kids keep costs lean and tend to save more, while larger families face higher fixed expenses and tighter margins.
+              The strongest split is <strong>with vs. without children</strong> (η² 83.1%). This aligns with <strong>household size</strong> (61.9%) and a strong separation by <strong>graduate education</strong> (72.0%), producing distinct “lifestyle” groups with very different savings capacity.
             </p>
           </div>
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
             <h4 className="font-semibold text-slate-900 mb-1">What age tells us</h4>
             <p>
-              Age barely separates the clusters. Younger and older residents appear in every group; what really matters is how many people share a household and how far income rises above basic costs.
+              Age is not a dominant factor here. Cluster separation is driven primarily by <strong>having kids</strong>, <strong>education (graduate)</strong>, <strong>household size</strong>, and <strong>income</strong> (38.0%). For month-to-month financial resilience, the strongest predictor of SavingsRate is <strong>cost of living</strong> (ΔR² 0.828), followed by <strong>income</strong> (0.408), <strong>household size</strong> (0.376), and <strong>having kids</strong> (0.127).
             </p>
           </div>
         </div>
@@ -194,7 +240,8 @@ function ResidentDashboard() {
 
       {/* Filter Controls */}
       <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-600/10 via-indigo-500/5 to-purple-500/10 p-5 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-xs font-semibold tracking-widest text-blue-900/60 uppercase">Smart highlight</p>
             <h4 className="text-lg font-semibold text-gray-900">Household spotlight</h4>
@@ -221,6 +268,37 @@ function ResidentDashboard() {
             })}
           </div>
         </div>
+
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4 border-t border-white/40">
+          <div>
+            <p className="text-xs font-semibold tracking-widest text-blue-900/60 uppercase">Filter</p>
+            <h4 className="text-base font-semibold text-gray-900">Cluster</h4>
+            <p className="text-sm text-blue-900/80 max-w-md">Limits both the scatter plot and the PCP.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {CLUSTER_OPTIONS.map((opt) => {
+              const normalized = normalizeClusterValue(filterCluster);
+              const isActive = normalizeClusterValue(opt.value) === normalized;
+              return (
+                <button
+                  key={String(opt.value)}
+                  onClick={() => setFilterCluster(opt.value)}
+                  className={`rounded-full px-3 py-2 text-sm border transition ${isActive ? 'bg-white text-blue-700 border-indigo-200 shadow-sm' : 'bg-white/40 text-blue-900/80 border-white/40 hover:bg-white/60'}`}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    {opt.color ? (
+                      <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: opt.color }} />
+                    ) : (
+                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-300" />
+                    )}
+                    {opt.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
       </div>
 
       {/* Visualizations */}
@@ -229,6 +307,7 @@ function ResidentDashboard() {
           onFilter={setSelectedIds} 
           selectedIds={selectedIds}
           filterHaveKids={filterHaveKids} 
+          filterCluster={filterCluster}
           selectedMonth={selectedMonth}
           brushedTimeRange={brushedTimeRange}
         />
@@ -258,7 +337,7 @@ function ResidentDashboard() {
                       <ol className="list-decimal ml-5 space-y-0.5">
                         {(driverStats.cluster_separation?.numeric_eta2 || []).map((d) => (
                           <li key={d.feature}>
-                            <span className="font-medium">{d.feature}</span>{' '}
+                            <span className="font-medium">{formatDriverFeatureLabel(d.feature)}</span>{' '}
                             <span className="text-gray-500">({(Number(d.eta2) * 100).toFixed(1)}%)</span>
                           </li>
                         ))}
@@ -269,7 +348,7 @@ function ResidentDashboard() {
                       <ol className="list-decimal ml-5 space-y-0.5">
                         {(driverStats.savings_predictors?.permutation_importance || []).map((d) => (
                           <li key={d.feature}>
-                            <span className="font-medium">{d.feature}</span>{' '}
+                            <span className="font-medium">{formatDriverFeatureLabel(d.feature)}</span>{' '}
                             <span className="text-gray-500">(ΔR² {Number(d.importance_mean).toFixed(3)})</span>
                           </li>
                         ))}
@@ -286,6 +365,7 @@ function ResidentDashboard() {
               onFilter={setSelectedIds}
               selectedMonth={selectedMonth}
               filterHaveKids={filterHaveKids}
+              filterCluster={filterCluster}
               onTimeBrush={setBrushedTimeRange}
             />
           </div>

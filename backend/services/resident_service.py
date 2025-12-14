@@ -17,6 +17,9 @@ from pathlib import Path
 # Global cache for data
 _DATA_CACHE = {}
 
+# Bump this when the resident cached outputs (especially clustering features) change.
+_RESIDENT_CACHE_VERSION = 2
+
 
 _EDUCATION_LEVEL_CATEGORIES = [
     'Low',
@@ -51,15 +54,50 @@ def _coerce_have_kids_to_int(series: pd.Series) -> pd.Series:
 
 
 def _build_resident_cluster_features(merged: pd.DataFrame) -> pd.DataFrame:
+    """Deprecated: use `_build_resident_clustering_features`.
+
+    This name is kept for backward compatibility inside the codebase.
+    """
+    return _build_resident_clustering_features(merged)
+
+
+def _build_resident_clustering_features(merged: pd.DataFrame) -> pd.DataFrame:
     """Build the feature matrix used for resident clustering.
 
-    Keeps the existing numeric features and adds:
+    IMPORTANT: Expenditure categories (e.g., Education/Food/Recreation) are
+    intentionally excluded from the clustering procedure.
+
+    Includes:
+    - numeric: age, householdSize, Income, CostOfLiving, SavingsRate
     - `haveKids` (0/1)
-    - One-hot encoded `educationLevel`
+    - one-hot encoded `educationLevel`
     """
-    numeric_cols = ['age', 'householdSize', 'Income', 'CostOfLiving', 'Education', 'SavingsRate']
+    numeric_cols = ['age', 'householdSize', 'Income', 'CostOfLiving', 'SavingsRate']
     features = merged[numeric_cols].copy()
 
+    if 'haveKids' in merged.columns:
+        features['haveKids'] = _coerce_have_kids_to_int(merged['haveKids'])
+
+    if 'educationLevel' in merged.columns:
+        education = merged['educationLevel'].fillna('Unknown')
+        education = pd.Categorical(education, categories=_EDUCATION_LEVEL_CATEGORIES)
+        dummies = pd.get_dummies(education, prefix='educationLevel')
+        features = pd.concat([features, dummies], axis=1)
+
+    return features
+
+
+def _build_resident_savings_prediction_features(merged: pd.DataFrame) -> pd.DataFrame:
+    """Feature matrix for predicting SavingsRate.
+
+    Unlike clustering, prediction may use spending categories if present.
+    """
+    numeric_cols = ['age', 'householdSize', 'Income', 'CostOfLiving', 'SavingsRate']
+    features = merged[numeric_cols].copy()
+
+    # Optional spending categories for prediction (not for clustering)
+    if 'Education' in merged.columns:
+        features['Education'] = merged['Education']
     if 'Food' in merged.columns:
         features['Food'] = merged['Food']
 
@@ -182,7 +220,7 @@ def _cramers_v(x: pd.Series, y: pd.Series) -> float:
 
 def _build_savings_prediction_features(merged: pd.DataFrame) -> pd.DataFrame:
     """Feature matrix for predicting SavingsRate (drops SavingsRate itself)."""
-    base = _build_resident_cluster_features(merged)
+    base = _build_resident_savings_prediction_features(merged)
     return base.drop(columns=['SavingsRate'], errors='ignore')
 
 
@@ -198,7 +236,7 @@ def get_driver_stats(top_n: int = 5, random_state: int = 42) -> dict:
     # 1) Cluster separation
     cluster_separation_numeric = []
     if 'Cluster' in merged_df.columns:
-        feature_matrix = _build_resident_cluster_features(merged_df)
+        feature_matrix = _build_resident_clustering_features(merged_df)
         for col in feature_matrix.columns:
             cluster_separation_numeric.append(
                 {
@@ -330,6 +368,8 @@ def _load_disk_cache(processed_dir: Path, raw_mtime: float):
     except Exception as exc:
         print(f"Failed to load resident cache: {exc}")
         return None
+    if payload.get('cache_version') != _RESIDENT_CACHE_VERSION:
+        return None
     if payload.get('raw_mtime', 0) < raw_mtime:
         return None
     return payload.get('frames')
@@ -338,7 +378,7 @@ def _persist_disk_cache(frames: dict, processed_dir: Path, raw_mtime: float):
     cache_path = processed_dir / 'resident_data_cache.pkl'
     try:
         with cache_path.open('wb') as f:
-            pickle.dump({'raw_mtime': raw_mtime, 'frames': frames}, f)
+            pickle.dump({'raw_mtime': raw_mtime, 'cache_version': _RESIDENT_CACHE_VERSION, 'frames': frames}, f)
     except Exception as exc:
         print(f"Failed to persist resident cache: {exc}")
 
@@ -484,7 +524,7 @@ def _get_data():
     # Perform Clustering
     # Features for clustering: existing numeric financial/demographic metrics
     # plus one-hot encoded educationLevel and haveKids (0/1).
-    features = _build_resident_cluster_features(merged)
+    features = _build_resident_clustering_features(merged)
 
     # Simple normalization (robust to constant columns)
     means = features.mean(numeric_only=True)

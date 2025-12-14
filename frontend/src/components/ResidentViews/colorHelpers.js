@@ -1,7 +1,7 @@
 // Shared palette + helpers to keep cluster colors consistent across visuals
 export const CLUSTER_COLOR_RANGE = [
-  '#4E79A7', // blue
   '#F28E2B', // orange
+  '#4E79A7', // blue
   '#E15759', // red
   '#76B7B2', // teal
   '#59A14F', // green

@@ -4,7 +4,7 @@ import { fetchParallelCoordinates } from '../../../utils/api';
 import { decodeLabel } from '../labels';
 import { CLUSTER_COLOR_RANGE, getSortedClusterDomain } from '../colorHelpers';
 
-function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveKids, onTimeBrush }) {
+function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveKids, filterCluster, onTimeBrush }) {
   const containerRef = useRef();
   const svgRef = useRef();
   const [data, setData] = useState([]);
@@ -55,9 +55,19 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
   useEffect(() => {
     if (!data.length || dimensions.width === 0 || dimensions.height === 0) return;
 
-    // Apply cohort filter client-side to ensure density slider samples the right group
-    const filteredData = filterHaveKids === null ? data : data.filter(d => d.haveKids === filterHaveKids);
-    const renderData = filteredData.length ? filteredData : data;
+    // Apply cohort filters client-side to ensure density slider samples the right group
+    const filteredByKids = filterHaveKids === null ? data : data.filter(d => d.haveKids === filterHaveKids);
+    const filteredByCluster = (filterCluster === null || filterCluster === undefined)
+      ? filteredByKids
+      : filteredByKids.filter(d => Number(d.Cluster) === Number(filterCluster));
+    // Filter out negative SavingsRate rows for display (axis stays [0,1]).
+    const renderData = filteredByCluster.filter((row) => {
+      const value = row?.SavingsRate;
+      if (value === null || value === undefined) return true;
+      const asNumber = Number(value);
+      if (!Number.isFinite(asNumber)) return true;
+      return asNumber >= 0;
+    });
 
     // Reduced margins to maximize horizontal space
     const margin = { top: 40, right: 10, bottom: 40, left: 50 }; // Increased left margin for month labels
@@ -78,6 +88,9 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
       if (dim === 'month') {
         const months = [...new Set(renderData.map(d => d[dim]))].sort();
         yScales[dim] = d3.scalePoint().domain(months).range([height, 0]).padding(0.1);
+      } else if (dim === 'SavingsRate') {
+        // SavingsRate is a ratio; keep axis in the interpretable range.
+        yScales[dim] = d3.scaleLinear().domain([0.0, 1.0]).range([height, 0]);
       } else {
         yScales[dim] = d3.scaleLinear().domain(d3.extent(renderData, d => d[dim])).range([height, 0]);
       }
@@ -86,7 +99,8 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
     const xScale = d3.scalePoint().range([0, width]).padding(0.5).domain(dims);
 
     // Color scale (match scatterplot palette)
-    const clusterDomain = getSortedClusterDomain(renderData.map(d => d.Cluster));
+    // IMPORTANT: Keep cluster->color mapping stable even when renderData is filtered to one cluster.
+    const clusterDomain = getSortedClusterDomain(data.map(d => d.Cluster));
     const colorScale = d3.scaleOrdinal().domain(clusterDomain).range(CLUSTER_COLOR_RANGE);
 
     // Line generator
@@ -241,7 +255,7 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
       .style('font-weight', 'bold')
       .style('font-size', '12px');
 
-  }, [data, selectedIds, sampleRate, dimensions, filterHaveKids]);
+  }, [data, selectedIds, sampleRate, dimensions, filterHaveKids, filterCluster]);
 
   return (
     <div className="flex flex-col h-full w-full">

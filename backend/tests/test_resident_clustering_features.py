@@ -11,7 +11,7 @@ import pandas as pd
 from services import resident_service
 
 
-def test_build_resident_cluster_features_includes_one_hot_and_haveKids():
+def test_build_resident_clustering_features_includes_one_hot_and_haveKids_excludes_spending():
     merged = pd.DataFrame(
         {
             'age': [30, 40],
@@ -19,13 +19,14 @@ def test_build_resident_cluster_features_includes_one_hot_and_haveKids():
             'Income': [1000.0, 1000.0],
             'CostOfLiving': [500.0, 500.0],
             'Education': [0.0, 0.0],
+            'Food': [10.0, 20.0],
             'SavingsRate': [0.5, 0.5],
             'educationLevel': ['Bachelors', None],
             'haveKids': [True, 'false'],
         }
     )
 
-    features = resident_service._build_resident_cluster_features(merged)
+    features = resident_service._build_resident_clustering_features(merged)
 
     assert 'haveKids' in features.columns
     assert int(features.loc[0, 'haveKids']) == 1
@@ -36,6 +37,10 @@ def test_build_resident_cluster_features_includes_one_hot_and_haveKids():
 
     assert int(features.loc[0, 'educationLevel_Bachelors']) == 1
     assert int(features.loc[1, 'educationLevel_Unknown']) == 1
+
+    # Spending categories must not be used in clustering.
+    assert 'Education' not in features.columns
+    assert 'Food' not in features.columns
 
 
 def test_coerce_have_kids_to_int_handles_common_inputs():

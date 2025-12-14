@@ -128,7 +128,7 @@ We looked at resident financial health from three angles: where financial stress
 </p>
 
 <p class="calibri">
-<b>Geographic Financial Health.</b> The building-level heatmap shows scattered “red pockets” of low savings across Engagement (Figures 1 &amp; 2). Comparing the early vs. later snapshot (Figure 1 vs. Figure 2) suggests these pockets are persistent rather than spreading, which points to chronic, neighborhood-level strain instead of a city-wide decline. A useful way to read this view is as a spatial “hotspot” scan: the pattern is uneven, but also stable.
+<b>Geographic Financial Health.</b> The building-level heatmap shows scattered “red pockets” of low savings across Engagement (Figures 1 &amp; 2). Early vs. later snapshots suggest these pockets are persistent rather than spreading, pointing to chronic neighborhood-level strain rather than a city-wide decline.
 </p>
 
 <p class="calibri" style="text-align:center;">
@@ -151,7 +151,7 @@ We looked at resident financial health from three angles: where financial stress
 </p>
 
 <p class="calibri">
-<b>Cluster Patterns.</b> Using k-means, we get three recurring “financial personas” (Figure 6): <b>Affluent Achievers</b> (high income, high savings), <b>Stretched Households</b> (low income, low savings), and <b>Lean Savers</b> (average income, low costs). The parallel coordinates plot (Figure 6) is helpful here because it shows multivariate profiles (income + multiple expense dimensions + savings) instead of forcing a single x–y story. The demographic bars (Figure 7) support the rationale: education level lines up with higher savings rates, whereas households size does not seem to have big impact on savings (Figure 7).
+<b>Cluster Patterns.</b> Using k-means, we get three recurring “financial personas” (Figure 6): <b>Affluent Achievers</b> (high income, high savings), <b>Stretched Households</b> (low income, low savings capacity), and <b>Lean Savers</b> (moderate income, relatively low costs). Importantly, the clearest cluster separation signals come from household composition and education: <b>having kids</b> (η² 83.1%), <b>graduate education</b> (η² 72.0%), <b>household size</b> (η² 61.9%), and <b>income</b> (η² 38.0%). The parallel coordinates plot (Figure 6) then helps validate how these personas differ across income, total costs, and downstream spending mix.
 </p>
 
 <p class="calibri" style="text-align:center;">
@@ -161,7 +161,7 @@ We looked at resident financial health from three angles: where financial stress
 </p>
 
 <p class="calibri">
-<b>Expense Trajectories &amp; Inequality.</b> The stacked area chart (Figure 8) tracks average monthly income (dashed line) versus the composition of expenses, making it easy to spot both seasonality and shifts in spending mix. The visible drop in both salary and expenses in the final months (April–May 2023) suggests a potential slowdown rather than just households “overspending” (Figure 8). Looking at the citywide expense composition (Figure 9) helps explain what likely drives pressure for near break-even residents: small changes in big categories can erase an already-small surplus (Figure 9). Finally, the inequality timeline (Figure 10) shows relatively stable income inequality but more volatile savings inequality, which hints that inequality changes are driven more by expense behavior and shocks than by wages drifting apart (Figure 10).
+<b>Expense Trajectories &amp; Inequality.</b> The stacked area chart (Figure 8) tracks average monthly income (dashed line) against the composition of expenses and highlights a visible drop in both income and expenses in the final months (April–May 2023), consistent with a slowdown. The inequality timeline (Figure 10) shows relatively stable income inequality but more volatile savings inequality.
 </p>
 
 <p class="calibri" style="text-align:center;">
@@ -176,11 +176,7 @@ We looked at resident financial health from three angles: where financial stress
 </p>
 
 <p class="calibri">
-<b>Why this design works.</b> These figures act as coordinated multiple views: map for spatial concentration (Figures 1–2), scatter for trade-offs and outliers (Figures 3–5), parallel coordinates for multivariate profiling (Figure 6), and timelines for trends and shocks (Figures 8–10). With brushing-and-linking, selecting a subgroup in one view and seeing it highlighted everywhere else makes the “same residents, different angles” story much easier to validate.
-</p>
-
-<p class="calibri">
-<b>Conclusion.</b> Financial health in Engagement is stable on aggregate but uneven: the strongest, most consistent strain signal comes from household structure, especially families with children sitting near break-even (Figures 4–5). The end-of-period dip (Figure 8) is the main temporal warning sign, while persistent geographic hotspots (Figures 1–2) suggest that targeted neighborhood interventions could have outsized impact. Savings inequality swings more than income inequality (Figure 10), reinforcing the idea that spending pressures (not just wages) shape who falls behind.
+<b>Conclusion.</b> Financial health in Engagement is stable on aggregate but uneven: the strongest, most consistent strain signal comes from household structure—especially families with children sitting near break-even (Figures 4–5). Cost pressures matter most: <b>cost of living</b> is the strongest predictor of SavingsRate (ΔR² 0.828), followed by <b>income</b> (0.408), <b>household size</b> (0.376), and <b>having kids</b> (0.127). Persistent geographic hotspots (Figures 1–2) suggest targeted neighborhood interventions could have outsized impact.
 </p>
 
 <p class="calibri"><b>3</b> - <span class="arial">Describe the health of the various employers within the city limits. What employment patterns do you observe? Do you notice any areas of particularly high or low turnover? Limit your response to 10 images and 500 words.</span></p>
