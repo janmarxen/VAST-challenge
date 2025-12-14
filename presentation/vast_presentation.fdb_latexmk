@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1765714152.53072 "vast_presentation.tex" "vast_presentation.pdf" "vast_presentation" 1765714159.24398 0
+["pdflatex"] 1765725219.96925 "vast_presentation.tex" "vast_presentation.pdf" "vast_presentation" 1765725226.46768 0
   "/etc/texmf/web2c/texmf.cnf" 1761212066.49122 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/fontawesome5/fa5brands0.enc" 1622837620 2920 d63721872b8c77041b88e51b8f7c291d ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/fontawesome5/fa5free0.enc" 1622837620 3083 a707712f77b073b3833e4b1334a30e99 ""
@@ -309,18 +309,20 @@
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1761212162 8213673 5223612248a5a8b3bb1aa6d6d358b0b4 ""
   "collegebeamer.sty" 1764688667.64273 9266 eb594233617f9dcbbe7cbec5a3ef2a44 ""
   "img/color-logo.png" 1764688834.03395 23117 ba63e58540f59f65f04ffd8f83e4952e ""
-  "img/demographic_parallel_plot.png" 1765714015.61777 846534 50865fb0495267ee0b0f1fa5eec864bf ""
+  "img/demographic_parallel_plot.png" 1765724898.73881 846534 50865fb0495267ee0b0f1fa5eec864bf ""
   "img/financial_flow.png" 1765034253.97241 40649 7f31ab8ee146c558f46d1dae6bc8f474 ""
   "img/geog_fin_health.png" 1765021665.84374 168887 3c3840adc55c371869ccd4432e4615d9 ""
   "img/gini_inequality.png" 1765033459.62159 42595 588f42327e4105162da4ab9dbaae7a64 ""
   "img/living_gap_w_child.png" 1765021666.00248 178614 823c4352ced7d14f00c1c66cc4a931ae ""
   "img/living_gap_wo_child.png" 1765021666.06011 205266 1fe33e8fabe28a0d296f9d75650a465a ""
   "img/ohio-map-on-white-background-free-vector.jpg" 1765021491.28007 13641 788ad807b0f2c6c711672d385e0890eb ""
+  "img/savings_education.png" 1765724898.73956 22825 23138fb251d3cb5770b64d53744bf278 ""
+  "img/savings_household_size.png" 1765724898.74038 38448 3333aae9f02de36dd5ba474b6b50f7ce ""
   "img/trans-logo.png" 1764688834.04169 11667 cc58873ea17d311b6c6cb9eeeb242af3 ""
-  "vast_presentation.aux" 1765714158.68499 6333 f8aa96d674572f50d281e17229c05601 "pdflatex"
-  "vast_presentation.nav" 1765714158.68945 4019 171bb9798b3b021e34129ac4a9a6fb39 "pdflatex"
-  "vast_presentation.out" 1765714158.68845 1150 f1c0e7d2626a5658a457be597cacdb52 "pdflatex"
-  "vast_presentation.tex" 1765034828.14319 20249 78603b711e8f90dacc8486124867080a ""
+  "vast_presentation.aux" 1765725226.07796 6461 ada6356eec6b442e10eb2200bf38bee1 "pdflatex"
+  "vast_presentation.nav" 1765725226.07939 4111 758c6893c0bc0a334fe48612d894d4e8 "pdflatex"
+  "vast_presentation.out" 1765725226.07939 1150 f1c0e7d2626a5658a457be597cacdb52 "pdflatex"
+  "vast_presentation.tex" 1765725215.66341 21186 60cce0f0fd996c2d25028119b35e863d ""
   (generated)
   "vast_presentation.aux"
   "vast_presentation.log"
