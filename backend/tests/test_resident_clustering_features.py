@@ -47,8 +47,8 @@ def test_coerce_have_kids_to_int_handles_common_inputs():
 def test_relabel_clusters_for_palette_orders_semantics():
     # Create three clusters with distinct semantics:
     # - Cluster 7: affluent (highest income)
-    # - Cluster 3: lean (lowest cost among non-affluent)
-    # - Cluster 5: stretched (remaining)
+    # - Cluster 3: lean (non-affluent with higher savings rate)
+    # - Cluster 5: stretched (lowest savings rate among non-affluent)
     merged = pd.DataFrame(
         {
             'Cluster': [7, 7, 3, 3, 5, 5],

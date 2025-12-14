@@ -62,8 +62,6 @@ def _build_resident_cluster_features(merged: pd.DataFrame) -> pd.DataFrame:
 
     if 'Food' in merged.columns:
         features['Food'] = merged['Food']
-    if 'Recreation' in merged.columns:
-        features['Recreation'] = merged['Recreation']
 
     if 'haveKids' in merged.columns:
         features['haveKids'] = _coerce_have_kids_to_int(merged['haveKids'])
@@ -117,11 +115,15 @@ def _relabel_clusters_for_palette(merged: pd.DataFrame, cluster_col: str = 'Clus
     if remaining.empty:
         return merged
 
-    # Lean: lowest cost of living among the remaining clusters
-    lean_label = int(remaining.sort_values('CostOfLiving_mean', ascending=True).iloc[0][cluster_col])
+    # Stretched: lowest savings rate among remaining clusters
+    stretched_label = int(remaining.sort_values('SavingsRate_mean', ascending=True).iloc[0][cluster_col])
 
-    # Stretched: whatever is left
-    stretched_label = int([c for c in labels if c not in {affluent_label, lean_label}][0])
+    remaining2 = remaining[remaining[cluster_col] != stretched_label]
+    if remaining2.empty:
+        return merged
+
+    # Lean: the remaining cluster (typically low cost / decent savings)
+    lean_label = int(remaining2.iloc[0][cluster_col])
 
     mapping = {
         stretched_label: 0,

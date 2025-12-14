@@ -252,8 +252,30 @@ function ResidentDashboard() {
                 <p className="text-xs text-gray-500">Loading…</p>
               ) : (
                 <>
-                  <p className="mb-1">Cluster separation (η²): {driverStats.cluster_separation?.numeric_eta2?.map(d => d.feature).join(', ')}</p>
-                  <p>SavingsRate predictors (permutation): {driverStats.savings_predictors?.permutation_importance?.map(d => d.feature).join(', ')}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <p className="mb-1 font-semibold text-gray-700">Cluster separation (η²)</p>
+                      <ol className="list-decimal ml-5 space-y-0.5">
+                        {(driverStats.cluster_separation?.numeric_eta2 || []).map((d) => (
+                          <li key={d.feature}>
+                            <span className="font-medium">{d.feature}</span>{' '}
+                            <span className="text-gray-500">({(Number(d.eta2) * 100).toFixed(1)}%)</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                    <div>
+                      <p className="mb-1 font-semibold text-gray-700">SavingsRate predictors (perm. importance)</p>
+                      <ol className="list-decimal ml-5 space-y-0.5">
+                        {(driverStats.savings_predictors?.permutation_importance || []).map((d) => (
+                          <li key={d.feature}>
+                            <span className="font-medium">{d.feature}</span>{' '}
+                            <span className="text-gray-500">(ΔR² {Number(d.importance_mean).toFixed(3)})</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  </div>
                 </>
               )}
             </div>
