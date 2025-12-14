@@ -47,7 +47,7 @@ Q3) (Michal only)
 
 ### Deliverable 2 : Presentation ###
 
-- 15 min presentation + 5 min questions
+- 10 min presentation + 5 min questions
 - presenting the visual interface 
 - a motivation of the main design decisions made
 - how work was organized within the group
@@ -75,4 +75,5 @@ Q3) (Michal only)
 - index.html as PDF
 - video
 - slides
+
 
