@@ -125,6 +125,25 @@ def test_inequality_timeline_endpoint(client):
             assert 0 <= entry['giniSavingsRate'] <= 1
 
 
+def test_driver_stats_endpoint(client):
+    """Test GET /api/resident/driver-stats"""
+    response = client.get('/api/resident/driver-stats?top_n=3')
+    assert response.status_code == 200
+    data = response.get_json()
+    assert isinstance(data, dict)
+    assert 'cluster_separation' in data
+    assert 'savings_predictors' in data
+    assert 'meta' in data
+
+    cs = data['cluster_separation']
+    assert 'numeric_eta2' in cs and isinstance(cs['numeric_eta2'], list)
+    assert 'categorical_cramersV' in cs and isinstance(cs['categorical_cramersV'], list)
+
+    sp = data['savings_predictors']
+    assert 'top_coefficients' in sp and isinstance(sp['top_coefficients'], list)
+    assert 'permutation_importance' in sp and isinstance(sp['permutation_importance'], list)
+
+
 # TODO: Add more comprehensive tests as data processing is implemented
 # - Test clustering algorithm outputs
 # - Test demographic filtering logic

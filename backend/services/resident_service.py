@@ -5,6 +5,11 @@ Contains data processing logic for resident financial health analysis.
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.inspection import permutation_importance
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import KFold, cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 import os
 import pickle
 from pathlib import Path
@@ -126,6 +131,173 @@ def _relabel_clusters_for_palette(merged: pd.DataFrame, cluster_col: str = 'Clus
     merged = merged.copy()
     merged[cluster_col] = merged[cluster_col].map(mapping).astype(int)
     return merged
+
+
+def _eta_squared_by_cluster(values: pd.Series, clusters: pd.Series) -> float:
+    """Effect size of cluster separation for a numeric feature."""
+    x = pd.to_numeric(values, errors='coerce')
+    c = clusters
+    valid = x.notna() & c.notna()
+    x = x[valid]
+    c = c[valid]
+    if x.empty:
+        return 0.0
+
+    overall_mean = float(x.mean())
+    ss_total = float(((x - overall_mean) ** 2).sum())
+    if ss_total <= 0:
+        return 0.0
+
+    grouped = x.groupby(c)
+    means = grouped.mean()
+    counts = grouped.size()
+    ss_between = float(((means - overall_mean) ** 2 * counts).sum())
+    return max(0.0, min(1.0, ss_between / ss_total))
+
+
+def _cramers_v(x: pd.Series, y: pd.Series) -> float:
+    """Cramér's V association for two categorical variables (no scipy dependency)."""
+    x = x.fillna('Unknown')
+    y = y.fillna('Unknown')
+    table = pd.crosstab(x, y)
+    n = float(table.values.sum())
+    if n <= 0:
+        return 0.0
+
+    obs = table.values.astype(float)
+    row_sums = obs.sum(axis=1, keepdims=True)
+    col_sums = obs.sum(axis=0, keepdims=True)
+    expected = row_sums @ (col_sums / n)
+    mask = expected > 0
+    chi2 = float((((obs - expected) ** 2) / np.where(mask, expected, 1.0))[mask].sum())
+
+    r, k = obs.shape
+    denom = n * max(1, min(r - 1, k - 1))
+    if denom <= 0:
+        return 0.0
+    return float(np.sqrt(max(0.0, chi2 / denom)))
+
+
+def _build_savings_prediction_features(merged: pd.DataFrame) -> pd.DataFrame:
+    """Feature matrix for predicting SavingsRate (drops SavingsRate itself)."""
+    base = _build_resident_cluster_features(merged)
+    return base.drop(columns=['SavingsRate'], errors='ignore')
+
+
+def get_driver_stats(top_n: int = 5, random_state: int = 42) -> dict:
+    """Compute lightweight driver statistics for reporting.
+
+    Returns:
+      - which features separate clusters most (effect sizes)
+      - which features are most predictive of SavingsRate (Ridge + permutation importance)
+    """
+    merged_df, _, _ = _get_data()
+
+    # 1) Cluster separation
+    cluster_separation_numeric = []
+    if 'Cluster' in merged_df.columns:
+        feature_matrix = _build_resident_cluster_features(merged_df)
+        for col in feature_matrix.columns:
+            cluster_separation_numeric.append(
+                {
+                    'feature': col,
+                    'eta2': _eta_squared_by_cluster(feature_matrix[col], merged_df['Cluster']),
+                }
+            )
+
+    cluster_separation_numeric.sort(key=lambda d: d['eta2'], reverse=True)
+    cluster_separation_numeric = cluster_separation_numeric[: max(0, int(top_n))]
+
+    cluster_separation_categorical = []
+    if 'Cluster' in merged_df.columns:
+        if 'educationLevel' in merged_df.columns:
+            cluster_separation_categorical.append(
+                {
+                    'feature': 'educationLevel',
+                    'cramersV': _cramers_v(merged_df['educationLevel'].astype(str), merged_df['Cluster'].astype(str)),
+                }
+            )
+        if 'haveKids' in merged_df.columns:
+            hk = _coerce_have_kids_to_int(merged_df['haveKids']).astype(str)
+            cluster_separation_categorical.append(
+                {
+                    'feature': 'haveKids',
+                    'cramersV': _cramers_v(hk, merged_df['Cluster'].astype(str)),
+                }
+            )
+
+    cluster_separation_categorical.sort(key=lambda d: d['cramersV'], reverse=True)
+    cluster_separation_categorical = cluster_separation_categorical[: max(0, int(top_n))]
+
+    # 2) SavingsRate prediction
+    predictors = {
+        'cv_r2_mean': None,
+        'top_coefficients': [],
+        'permutation_importance': [],
+    }
+
+    if 'SavingsRate' in merged_df.columns:
+        X = _build_savings_prediction_features(merged_df)
+        y = pd.to_numeric(merged_df['SavingsRate'], errors='coerce').fillna(0.0)
+
+        # Keep numeric-only matrix for the model
+        X = X.apply(pd.to_numeric, errors='coerce').fillna(0.0)
+
+        model = Pipeline(
+            steps=[
+                ('scaler', StandardScaler()),
+                ('ridge', Ridge(alpha=1.0)),
+            ]
+        )
+
+        try:
+            cv = KFold(n_splits=5, shuffle=True, random_state=random_state)
+            scores = cross_val_score(model, X, y, cv=cv, scoring='r2')
+            predictors['cv_r2_mean'] = float(np.mean(scores))
+        except Exception:
+            predictors['cv_r2_mean'] = None
+
+        model.fit(X, y)
+        ridge = model.named_steps['ridge']
+        coefs = ridge.coef_.ravel()
+        coef_rows = [
+            {'feature': name, 'coef': float(value)} for name, value in zip(X.columns.tolist(), coefs)
+        ]
+        coef_rows.sort(key=lambda d: abs(d['coef']), reverse=True)
+        predictors['top_coefficients'] = coef_rows[: max(0, int(top_n))]
+
+        try:
+            perm = permutation_importance(
+                model,
+                X,
+                y,
+                scoring='r2',
+                n_repeats=10,
+                random_state=random_state,
+            )
+            perm_rows = [
+                {
+                    'feature': name,
+                    'importance_mean': float(mean),
+                    'importance_std': float(std),
+                }
+                for name, mean, std in zip(X.columns.tolist(), perm.importances_mean, perm.importances_std)
+            ]
+            perm_rows.sort(key=lambda d: d['importance_mean'], reverse=True)
+            predictors['permutation_importance'] = perm_rows[: max(0, int(top_n))]
+        except Exception:
+            predictors['permutation_importance'] = []
+
+    return {
+        'cluster_separation': {
+            'numeric_eta2': cluster_separation_numeric,
+            'categorical_cramersV': cluster_separation_categorical,
+        },
+        'savings_predictors': predictors,
+        'meta': {
+            'topN': int(top_n),
+        },
+    }
 
 def _resolve_data_dirs():
     repo_root = Path(__file__).resolve().parents[2]
