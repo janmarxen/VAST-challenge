@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 import WageVsCostScatter from './TabLivingGap/WageVsCostScatter';
 import FinancialTrajectories from './TabFinancialFlow/FinancialTrajectories';
 import ParallelCoordinates from './TabLivingGap/ParallelCoordinates';
@@ -20,6 +21,8 @@ function ResidentDashboard() {
   const [brushedTimeRange, setBrushedTimeRange] = useState(null);
   const [showFloatingTimeControl, setShowFloatingTimeControl] = useState(false);
   const timeControlRef = useRef(null);
+  const [driverStats, setDriverStats] = useState(null);
+  const [driverStatsError, setDriverStatsError] = useState(null);
 
   // Exclude the first month (2022-03) from the analysis per backend filtering
   const months = [
@@ -79,6 +82,25 @@ function ResidentDashboard() {
 
     observer.observe(target);
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    setDriverStatsError(null);
+    axios
+      .get('/api/resident/driver-stats?top_n=3')
+      .then((resp) => {
+        if (!isMounted) return;
+        setDriverStats(resp.data);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setDriverStatsError(err?.message || 'Failed to load driver stats');
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const renderTimeSlider = (isCompact = false) => (
@@ -221,6 +243,20 @@ function ResidentDashboard() {
               <li><strong className="text-sky-700">Stretched Households (blue)</strong>: lower-income residents with average living costs, leaving little room to save and clustering near the low-savings region.</li>
               <li><strong className="text-orange-600">Lean Savers (orange)</strong>: mostly single adults without children, with average incomes but very low costs, achieving medium to high savings rates.</li>
             </ul>
+
+            <div className="mt-3 text-xs text-gray-600">
+              <p className="mb-1"><strong>Top drivers (data-backed):</strong></p>
+              {driverStatsError ? (
+                <p className="text-xs text-amber-800">{driverStatsError}</p>
+              ) : !driverStats ? (
+                <p className="text-xs text-gray-500">Loading…</p>
+              ) : (
+                <>
+                  <p className="mb-1">Cluster separation (η²): {driverStats.cluster_separation?.numeric_eta2?.map(d => d.feature).join(', ')}</p>
+                  <p>SavingsRate predictors (permutation): {driverStats.savings_predictors?.permutation_importance?.map(d => d.feature).join(', ')}</p>
+                </>
+              )}
+            </div>
           </div>
           <div className="flex-1 min-h-[620px]">
             <ParallelCoordinates
