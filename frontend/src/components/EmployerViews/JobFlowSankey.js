@@ -10,27 +10,40 @@ import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 function JobFlowSankey({ selectedEmployer, minFlowThreshold = 1 }) {
   const svgRef = useRef();
   const [data, setData] = useState(null);
+  const [metaData, setMetaData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tooltip, setTooltip] = useState(null);
   const [selectedFlow, setSelectedFlow] = useState(null);
   const [totalEmployees, setTotalEmployees] = useState(0);
+  const [groupByIndustry, setGroupByIndustry] = useState(false);
 
   // Fetch data
   useEffect(() => {
     setLoading(true);
-    axios.get('/api/employers/job-flows')
-      .then(response => {
-        // API returns {"nodes": [], "links": [...]}
+    Promise.all([
+      axios.get('/api/employers/job-flows'),
+      axios.get('/api/employers/meta')
+    ])
+      .then(([flowsRes, metaRes]) => {
+        // Flows
         let links = [];
-        if (Array.isArray(response.data)) {
-          links = response.data;
-        } else if (response.data && Array.isArray(response.data.links)) {
-          links = response.data.links;
+        if (Array.isArray(flowsRes.data)) {
+          links = flowsRes.data;
+        } else if (flowsRes.data && Array.isArray(flowsRes.data.links)) {
+          links = flowsRes.data.links;
         }
+        
+        // Meta
+        let meta = [];
+        if (Array.isArray(metaRes.data)) {
+          meta = metaRes.data;
+        }
+
         // Calculate total employees moved
         const total = links.reduce((sum, d) => sum + (d.count || 0), 0);
         setTotalEmployees(total);
         setData(links);
+        setMetaData(meta);
         setLoading(false);
       })
       .catch(error => {
@@ -47,26 +60,75 @@ function JobFlowSankey({ selectedEmployer, minFlowThreshold = 1 }) {
       const width = 800;
       const height = 450;
 
-      // Filter flows by threshold
-      const filteredFlows = data.filter(d => d.count >= minFlowThreshold);
-      if (filteredFlows.length === 0) return;
+      let nodes = [];
+      let links = [];
 
-      // Build nodes
-      const nodeSet = new Set();
-      filteredFlows.forEach(d => {
-        nodeSet.add(d.fromEmployer);
-        nodeSet.add(d.toEmployer);
-      });
-      const nodes = Array.from(nodeSet).map(id => ({ id, name: `Employer ${id}` }));
+      if (groupByIndustry) {
+        // Group by buildingType
+        const empToType = {};
+        metaData.forEach(d => {
+          empToType[d.employerId] = d.buildingType || 'Unknown';
+        });
 
-      // Build links
-      const links = filteredFlows.map(d => ({
-        source: nodes.findIndex(n => n.id === d.fromEmployer),
-        target: nodes.findIndex(n => n.id === d.toEmployer),
-        value: d.count,
-        sourceId: d.fromEmployer,
-        targetId: d.toEmployer
-      }));
+        const flowMap = {};
+        data.forEach(d => {
+          const fromType = empToType[d.fromEmployer] || 'Unknown';
+          const toType = empToType[d.toEmployer] || 'Unknown';
+          if (fromType === toType) return; // Skip self-loops in industry view? Or keep them?
+          // Usually Sankey shows flows between categories. Self-loops are tricky.
+          // Let's keep them if they exist, but usually we want to see transitions.
+          
+          const key = `${fromType}|${toType}`;
+          if (!flowMap[key]) flowMap[key] = 0;
+          flowMap[key] += d.count;
+        });
+
+        const nodeSet = new Set();
+        Object.keys(flowMap).forEach(key => {
+          const [from, to] = key.split('|');
+          nodeSet.add(from);
+          nodeSet.add(to);
+        });
+
+        nodes = Array.from(nodeSet).map(id => ({ id, name: id }));
+        links = Object.entries(flowMap).map(([key, count]) => {
+          const [from, to] = key.split('|');
+          return {
+            source: nodes.findIndex(n => n.id === from),
+            target: nodes.findIndex(n => n.id === to),
+            value: count,
+            sourceId: from,
+            targetId: to
+          };
+        });
+
+      } else {
+        // Original Employer-to-Employer logic
+        // Filter flows by threshold
+        const filteredFlows = data.filter(d => d.count >= minFlowThreshold);
+        if (filteredFlows.length === 0) {
+            // Clear SVG if no data
+            d3.select(svgRef.current).selectAll('*').remove();
+            return;
+        }
+
+        // Build nodes
+        const nodeSet = new Set();
+        filteredFlows.forEach(d => {
+          nodeSet.add(d.fromEmployer);
+          nodeSet.add(d.toEmployer);
+        });
+        nodes = Array.from(nodeSet).map(id => ({ id, name: `Employer ${id}` }));
+
+        // Build links
+        links = filteredFlows.map(d => ({
+          source: nodes.findIndex(n => n.id === d.fromEmployer),
+          target: nodes.findIndex(n => n.id === d.toEmployer),
+          value: d.count,
+          sourceId: d.fromEmployer,
+          targetId: d.toEmployer
+        }));
+      }
 
       // Calculate node flows for hover info
       const nodeFlows = {};
@@ -80,7 +142,7 @@ function JobFlowSankey({ selectedEmployer, minFlowThreshold = 1 }) {
       // Sankey layout
       const graph = sankey()
         .nodeWidth(20)
-        .nodePadding(50)
+        .nodePadding(groupByIndustry ? 50 : 20) // More padding for fewer nodes
         .extent([[1, 1], [width - 1, height - 1]])({
           nodes: nodes.map(d => ({ ...d })),
           links: links.map(d => ({ ...d })),
@@ -125,8 +187,8 @@ function JobFlowSankey({ selectedEmployer, minFlowThreshold = 1 }) {
             x: event.pageX,
             y: event.pageY,
             content: {
-              from: `Employer ${d.sourceId}`,
-              to: `Employer ${d.targetId}`,
+              from: groupByIndustry ? d.sourceId : `Employer ${d.sourceId}`,
+              to: groupByIndustry ? d.targetId : `Employer ${d.targetId}`,
               count: d.value,
               percentage: percentage,
               type: 'flow'
@@ -187,19 +249,29 @@ function JobFlowSankey({ selectedEmployer, minFlowThreshold = 1 }) {
       console.error('Error rendering Sankey diagram:', error);
     }
 
-  }, [data, minFlowThreshold, selectedFlow, totalEmployees]);
+  }, [data, metaData, minFlowThreshold, selectedFlow, totalEmployees, groupByIndustry]);
 
   if (loading) return <div className="text-center py-8 text-gray-500">Loading job flow data...</div>;
 
   return (
     <div className="flex flex-col gap-4">
       {/* Header with description */}
-      <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded">
-        <h3 className="font-semibold text-amber-900 text-sm">Job Flow Between Employers</h3>
-        <p className="text-xs text-amber-800 mt-1">
-          Visualizes how workers move between employers and transition volumes. Hover flows to see movement percentages. 
-          Click flows to isolate. Explore which employers are major sources or destinations.
-        </p>
+      <div className="bg-amber-50 border-l-4 border-amber-400 p-3 rounded flex justify-between items-center">
+        <div>
+            <h3 className="font-semibold text-amber-900 text-sm">Job Flow Between Employers</h3>
+            <p className="text-xs text-amber-800 mt-1">
+            Visualizes how workers move between employers.
+            </p>
+        </div>
+        <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-amber-900">Group by Industry:</span>
+            <button 
+                onClick={() => setGroupByIndustry(!groupByIndustry)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${groupByIndustry ? 'bg-amber-600' : 'bg-gray-200'}`}
+            >
+                <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${groupByIndustry ? 'translate-x-5' : 'translate-x-1'}`} />
+            </button>
+        </div>
       </div>
 
       <div className="relative overflow-x-auto flex justify-center">

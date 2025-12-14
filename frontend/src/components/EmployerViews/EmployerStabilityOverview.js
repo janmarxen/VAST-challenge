@@ -6,7 +6,7 @@ import axios from 'axios';
  * Employer Stability Overview
  * Bubble scatter with corrected thresholds and scales
  */
-function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlightedEmployers, onBrushSelection }) {
+function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlightedEmployers, onBrushSelection, selectedMonth = '2022-03' }) {
   const svgRef = useRef();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,9 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
   useEffect(() => {
     setLoading(true);
     Promise.all([
-      axios.get('/api/employers/turnover-heatmap'),
+      axios.get('/api/employers/turnover-heatmap', {
+        params: { month: selectedMonth, fill_missing: true }
+      }),
       axios.get('/api/employers/tenure'),
       axios.get('/api/employers/employee-counts')
     ])
@@ -40,13 +42,13 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
         }
         countsData = Array.isArray(countsData) ? countsData : [];
         
-        // Filter turnover for March 2022
-        const marchTurnover = turnoverData.filter(d => d.month === '2022-03');
+        // Backend is month-scoped when month is provided; keep fallback filter for safety.
+        const monthTurnover = turnoverData.filter(d => d.month === selectedMonth);
         
-        // Calculate average headcount per employer from March 2022
-        const marchCounts = countsData.filter(d => d.month === '2022-03');
+        // Calculate average headcount per employer from selected month
+        const monthCounts = countsData.filter(d => d.month === selectedMonth);
         const headcountByEmployer = {};
-        marchCounts.forEach(d => {
+        monthCounts.forEach(d => {
           if (!headcountByEmployer[d.employerId]) {
             headcountByEmployer[d.employerId] = [];
           }
@@ -54,7 +56,7 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
         });
 
         // Combine data with percentage-based thresholds
-        const combined = marchTurnover.map(t => {
+        const combined = monthTurnover.map(t => {
           const tenureRecord = tenureData.find(te => te.employerId === t.employerId);
           const counts = headcountByEmployer[t.employerId] || [];
           const avgHeadcount = counts.length > 0 
@@ -66,9 +68,12 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
 
           // Determine stability category with percentage-based thresholds
           let stability = 'Normal';
-          if (turnoverPct > 15 && tenureRecord && tenureRecord.avgTenure < 120) {
+          // Adjusted thresholds based on data distribution (high turnover environment)
+          // High Risk: > 45% monthly turnover AND < 120 days tenure
+          // Stable: < 45% monthly turnover AND > 200 days tenure
+          if (turnoverPct > 45 && tenureRecord && tenureRecord.avgTenure < 120) {
             stability = 'High Risk';
-          } else if (turnoverPct < 5 && tenureRecord && tenureRecord.avgTenure > 250) {
+          } else if (turnoverPct < 45 && tenureRecord && tenureRecord.avgTenure > 200) {
             stability = 'Stable';
           }
 
@@ -93,7 +98,7 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
         console.error('Error fetching stability data:', error);
         setLoading(false);
       });
-  }, []);
+  }, [selectedMonth]);
 
   // Draw bubble scatter
   useEffect(() => {
@@ -139,27 +144,49 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
         .domain(['High Risk', 'Normal', 'Stable'])
         .range(['#b74545', '#5b7d99', '#5a9368']); // Muted red, blue, green
 
-      // Quadrant shading using THRESHOLD values, not percentages
-      // Stable Zone: turnover < 5%, tenure > 250 (more pronounced green)
+      // --- Background Zones ---
+
+      // 1. Stable Zone: turnover < 45%, tenure > 200
+      // Rect from x=0 to x=45, y=0 (top) to y=200
       g.append('rect')
-        .attr('x', xScale(5))
+        .attr('x', 0)
+        .attr('width', xScale(45))
         .attr('y', 0)
-        .attr('width', innerWidth - xScale(5))
-        .attr('height', yScale(250))
+        .attr('height', yScale(200))
         .attr('fill', '#22c55e')
         .attr('opacity', 0.08)
         .attr('pointer-events', 'none');
 
-      // Zone labels
       g.append('text')
-        .attr('x', innerWidth - (innerWidth - xScale(5)) / 2)
-        .attr('y', yScale(250) / 2)
+        .attr('x', xScale(22.5))
+        .attr('y', yScale(200) / 2)
         .attr('text-anchor', 'middle')
         .attr('fill', '#16a34a')
-        .attr('opacity', 0.3)
-        .attr('font-size', '11px')
+        .attr('opacity', 0.5)
+        .attr('font-size', '10px')
         .attr('font-weight', 'bold')
-        .text('✓ Stable Zone');
+        .text('Stable Zone');
+
+      // 2. High Risk Zone: turnover > 45%, tenure < 120
+      // Rect from x=45 to max, y=120 to bottom (0)
+      g.append('rect')
+        .attr('x', xScale(45))
+        .attr('width', innerWidth - xScale(45))
+        .attr('y', yScale(120))
+        .attr('height', innerHeight - yScale(120))
+        .attr('fill', '#ef4444')
+        .attr('opacity', 0.08)
+        .attr('pointer-events', 'none');
+
+      g.append('text')
+        .attr('x', xScale(45) + (innerWidth - xScale(45)) / 2)
+        .attr('y', yScale(120) + (innerHeight - yScale(120)) / 2)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#b91c1c')
+        .attr('opacity', 0.5)
+        .attr('font-size', '10px')
+        .attr('font-weight', 'bold')
+        .text('High Risk Zone');
 
       // Store jittered coordinates for each bubble (±3 px max)
       const jitteredData = data.map(d => ({
@@ -219,7 +246,7 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
         .attr('text-anchor', 'middle')
         .attr('fill', '#666')
         .attr('font-size', '12px')
-        .text('Turnover Rate (March 2022)');
+        .text(`Turnover Rate (${selectedMonth})`);
 
       g.append('g')
         .call(d3.axisLeft(yScale).ticks(5))
@@ -343,18 +370,28 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
         .attr('fill', '#666')
         .text('Employer headcount');
 
-      [100, 300, 500].forEach((size, i) => {
+      // Dynamic legend sizes based on data
+      const legendSizes = [
+        Math.round(maxHeadcount * 0.2),
+        Math.round(maxHeadcount * 0.5),
+        Math.round(maxHeadcount)
+      ].filter((v, i, a) => a.indexOf(v) === i && v > 0).sort((a, b) => a - b);
+      
+      // Fallback if data is weird
+      if (legendSizes.length === 0) legendSizes.push(Math.max(1, Math.round(maxHeadcount)));
+
+      legendSizes.forEach((size, i) => {
         const sizeRow = sizeLegend.append('g')
-          .attr('transform', `translate(0, ${28 + i * 18})`);
+          .attr('transform', `translate(0, ${28 + i * 22})`);
 
         sizeRow.append('circle')
-          .attr('r', rScale(Math.min(size, maxHeadcount)))
+          .attr('r', rScale(size))
           .attr('fill', 'none')
           .attr('stroke', '#999')
           .attr('stroke-width', 0.5);
 
         sizeRow.append('text')
-          .attr('x', rScale(Math.min(size, maxHeadcount)) + 10)
+          .attr('x', rScale(size) + 10)
           .attr('y', 3)
           .attr('font-size', '9px')
           .attr('fill', '#666')
@@ -365,7 +402,7 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
       console.error('Error rendering stability overview:', error);
     }
 
-  }, [data, selectedEmployer, highlightedEmployers]);
+  }, [data, selectedEmployer, highlightedEmployers, selectedMonth]);
 
   if (loading) return <div className="text-center py-8 text-gray-500">Loading stability data...</div>;
 
@@ -404,15 +441,18 @@ function EmployerStabilityOverview({ selectedEmployer, onEmployerSelect, highlig
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-2 text-xs">
-        <div className="bg-red-50 p-2 rounded border border-red-200">
-          <span className="font-semibold text-red-700">🔴 High Risk:</span> Turnover &gt; 15% AND Tenure &lt; 120d
+      <div className="grid grid-cols-3 gap-2 text-[10px] mt-2">
+        <div className="bg-red-50 p-1.5 rounded border border-red-200 leading-tight">
+          <span className="font-bold text-red-700 block mb-0.5">🔴 High Risk</span>
+          Turnover &gt; 45%<br/>Tenure &lt; 120d
         </div>
-        <div className="bg-blue-50 p-2 rounded border border-blue-200">
-          <span className="font-semibold text-blue-700">🔵 Normal:</span> Between thresholds
+        <div className="bg-blue-50 p-1.5 rounded border border-blue-200 leading-tight">
+          <span className="font-bold text-blue-700 block mb-0.5">🔵 Normal</span>
+          Between thresholds
         </div>
-        <div className="bg-green-50 p-2 rounded border border-green-200">
-          <span className="font-semibold text-green-700">🟢 Stable:</span> Turnover &lt; 5% AND Tenure &gt; 250d
+        <div className="bg-green-50 p-1.5 rounded border border-green-200 leading-tight">
+          <span className="font-bold text-green-700 block mb-0.5">🟢 Stable</span>
+          Turnover &lt; 45%<br/>Tenure &gt; 200d
         </div>
       </div>
     </div>

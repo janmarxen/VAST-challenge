@@ -13,21 +13,25 @@ function TurnoverRanking({ selectedEmployer, onEmployerSelect, selectedMonth, on
   const [sortBy, setSortBy] = useState('turnoverRate');
   const [tooltip, setTooltip] = useState(null);
   const [employerCount, setEmployerCount] = useState(15);
-  const [month, setMonth] = useState('2022-03');
+  
+  // Use prop if available, otherwise default (though prop should always be passed in this context)
+  const currentMonth = selectedMonth || '2022-03';
 
   // Fetch data
   useEffect(() => {
     setLoading(true);
     setEmployerCount(15); // Reset to default when month changes
-    axios.get('/api/employers/turnover-heatmap')
+    axios.get('/api/employers/turnover-heatmap', {
+      params: { month: currentMonth, fill_missing: true }
+    })
       .then(response => {
         // API returns {"data": [...]} so response.data = {"data": [...]}
         let data = response.data;
         if (data && data.data) {
           data = data.data;
         }
-        // Filter for selected month (March or April 2022)
-        const monthData = (Array.isArray(data) ? data : []).filter(d => d.month === month);
+        // Filter for selected month
+        const monthData = (Array.isArray(data) ? data : []).filter(d => d.month === currentMonth);
         setData(monthData);
         setLoading(false);
       })
@@ -35,7 +39,7 @@ function TurnoverRanking({ selectedEmployer, onEmployerSelect, selectedMonth, on
         console.error('Error fetching turnover heatmap:', error);
         setLoading(false);
       });
-  }, [month]);
+  }, [currentMonth]);
 
   // Draw chart
   useEffect(() => {
@@ -149,7 +153,7 @@ function TurnoverRanking({ selectedEmployer, onEmployerSelect, selectedMonth, on
       .attr('transform', 'rotate(-45)')
       .style('text-anchor', 'end');
 
-  }, [data, sortBy, selectedEmployer, highlightedEmployers, employerCount, month]);
+  }, [data, sortBy, selectedEmployer, highlightedEmployers, employerCount, currentMonth]);
 
   if (loading) return <div className="text-center py-8 text-gray-500">Loading turnover data...</div>;
 
@@ -168,32 +172,21 @@ function TurnoverRanking({ selectedEmployer, onEmployerSelect, selectedMonth, on
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <label className="text-xs font-semibold text-gray-700">Month:</label>
-          <button
-            onClick={() => {
-              setMonth('2022-03');
-              onMonthChange?.('2022-03');
+          <select
+            value={currentMonth}
+            onChange={(e) => {
+              onMonthChange?.(e.target.value);
             }}
-            className={`px-3 py-1 rounded text-xs font-medium transition ${
-              month === '2022-03'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+            className="text-xs border border-gray-300 rounded px-2 py-1 bg-white cursor-pointer"
           >
-            March 2022
-          </button>
-          <button
-            onClick={() => {
-              setMonth('2022-04');
-              onMonthChange?.('2022-04');
-            }}
-            className={`px-3 py-1 rounded text-xs font-medium transition ${
-              month === '2022-04'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            April 2022
-          </button>
+            {[
+              '2022-03', '2022-04', '2022-05', '2022-06', '2022-07', '2022-08',
+              '2022-09', '2022-10', '2022-11', '2022-12', '2023-01', '2023-02',
+              '2023-03', '2023-04', '2023-05'
+            ].map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
         </div>
 
         <div className="flex items-center gap-3">

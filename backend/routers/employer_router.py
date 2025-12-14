@@ -14,16 +14,64 @@ from services.employer_service import (
     get_employer_meta_data,
     get_employee_counts_data,
     get_tenure_data,
+    get_city_metrics,
+    get_employer_market_share_data,
+    get_geographic_turnover_data,
+    get_employer_financials,
 )
 
 employer_bp = Blueprint('employer', __name__)
+
+
+@employer_bp.route('/api/employers/financials', methods=['GET'])
+def financials():
+    """Return employer financial estimates."""
+    try:
+        data = get_employer_financials()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@employer_bp.route('/api/employers/geographic-turnover', methods=['GET'])
+def geographic_turnover():
+    """Return geographic turnover data."""
+    try:
+        month = request.args.get('month')
+        fill_missing = request.args.get('fill_missing', 'false').lower() in ('1', 'true', 'yes')
+        data = get_geographic_turnover_data(month=month, fill_missing=fill_missing)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@employer_bp.route('/api/employers/market-share', methods=['GET'])
+def market_share():
+    """Return employer market share data (monthly avg employment)."""
+    try:
+        data = get_employer_market_share_data()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@employer_bp.route('/api/employers/city-metrics', methods=['GET'])
+def city_metrics():
+    """Return aggregated city-wide metrics per month."""
+    try:
+        data = get_city_metrics()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @employer_bp.route('/api/employers/turnover-heatmap', methods=['GET'])
 def turnover_heatmap():
     """Return turnover heatmap data."""
     try:
-        data = get_turnover_heatmap_data()
+        month = request.args.get('month')
+        fill_missing = request.args.get('fill_missing', 'false').lower() in ('1', 'true', 'yes')
+        data = get_turnover_heatmap_data(month=month, fill_missing=fill_missing)
         return jsonify(data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
