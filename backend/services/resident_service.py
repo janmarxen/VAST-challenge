@@ -71,6 +71,62 @@ def _build_resident_cluster_features(merged: pd.DataFrame) -> pd.DataFrame:
 
     return features
 
+
+def _relabel_clusters_for_palette(merged: pd.DataFrame, cluster_col: str = 'Cluster') -> pd.DataFrame:
+    """Relabel KMeans cluster IDs to keep palette/semantics stable.
+
+    Frontend maps cluster IDs to colors by numeric order:
+      0 -> blue, 1 -> orange, 2 -> red
+
+    We want these semantics to stay stable across re-trainings:
+      - Stretched Households (blue): lowest savings capacity
+      - Lean Savers (orange): lowest cost of living among non-affluent
+      - Affluent Achievers (red): highest income
+    """
+    if cluster_col not in merged.columns:
+        return merged
+
+    labels = sorted(pd.unique(merged[cluster_col].dropna()))
+    if len(labels) != 3:
+        return merged
+
+    required = {'Income', 'CostOfLiving', cluster_col}
+    if not required.issubset(set(merged.columns)):
+        return merged
+
+    summary = (
+        merged.groupby(cluster_col, dropna=True)
+        .agg(
+            Income_mean=('Income', 'mean'),
+            CostOfLiving_mean=('CostOfLiving', 'mean'),
+            SavingsRate_mean=('SavingsRate', 'mean') if 'SavingsRate' in merged.columns else ('Income', 'mean'),
+        )
+        .reset_index()
+    )
+
+    # Affluent: highest income (tie-breaker: higher savings rate)
+    affluent_row = summary.sort_values(['Income_mean', 'SavingsRate_mean'], ascending=[False, False]).iloc[0]
+    affluent_label = int(affluent_row[cluster_col])
+
+    remaining = summary[summary[cluster_col] != affluent_label]
+    if remaining.empty:
+        return merged
+
+    # Lean: lowest cost of living among the remaining clusters
+    lean_label = int(remaining.sort_values('CostOfLiving_mean', ascending=True).iloc[0][cluster_col])
+
+    # Stretched: whatever is left
+    stretched_label = int([c for c in labels if c not in {affluent_label, lean_label}][0])
+
+    mapping = {
+        stretched_label: 0,
+        lean_label: 1,
+        affluent_label: 2,
+    }
+    merged = merged.copy()
+    merged[cluster_col] = merged[cluster_col].map(mapping).astype(int)
+    return merged
+
 def _resolve_data_dirs():
     repo_root = Path(__file__).resolve().parents[2]
     if Path('/app/data').exists():
@@ -264,6 +320,7 @@ def _get_data():
     
     kmeans = KMeans(n_clusters=3, random_state=42)
     merged['Cluster'] = kmeans.fit_predict(features)
+    merged = _relabel_clusters_for_palette(merged, cluster_col='Cluster')
     
     # Load Buildings for Geometry
     buildings = pd.read_csv(os.path.join(base_path, 'Buildings.csv'))

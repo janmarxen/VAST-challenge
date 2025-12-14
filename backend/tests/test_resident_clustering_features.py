@@ -42,3 +42,27 @@ def test_coerce_have_kids_to_int_handles_common_inputs():
     s = pd.Series([True, False, 'TRUE', 'no', 1, 0, None])
     out = resident_service._coerce_have_kids_to_int(s)
     assert out.tolist() == [1, 0, 1, 0, 1, 0, 0]
+
+
+def test_relabel_clusters_for_palette_orders_semantics():
+    # Create three clusters with distinct semantics:
+    # - Cluster 7: affluent (highest income)
+    # - Cluster 3: lean (lowest cost among non-affluent)
+    # - Cluster 5: stretched (remaining)
+    merged = pd.DataFrame(
+        {
+            'Cluster': [7, 7, 3, 3, 5, 5],
+            'Income': [10000, 11000, 4000, 4200, 3000, 3100],
+            'CostOfLiving': [6000, 6500, 1500, 1600, 2500, 2600],
+            'SavingsRate': [0.4, 0.35, 0.6, 0.55, 0.05, 0.1],
+        }
+    )
+
+    relabeled = resident_service._relabel_clusters_for_palette(merged)
+
+    # Affluent -> 2 (red)
+    assert set(relabeled.loc[merged['Cluster'] == 7, 'Cluster']) == {2}
+    # Lean -> 1 (orange)
+    assert set(relabeled.loc[merged['Cluster'] == 3, 'Cluster']) == {1}
+    # Stretched -> 0 (blue)
+    assert set(relabeled.loc[merged['Cluster'] == 5, 'Cluster']) == {0}
