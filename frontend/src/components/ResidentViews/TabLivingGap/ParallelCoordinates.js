@@ -8,6 +8,7 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
   const containerRef = useRef();
   const svgRef = useRef();
   const [data, setData] = useState([]);
+  const [allData, setAllData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sampleRate, setSampleRate] = useState(0.05); // Default 5% sampling
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -38,25 +39,29 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
     }
   }, [selectedIds]);
 
-  // Fetch data (ALL months)
+  // Fetch data (ALL months). Axes should remain static regardless of client-side filters,
+  // so we always fetch the full cohort and apply filters only at render time.
   useEffect(() => {
     setLoading(true);
-    fetchParallelCoordinates({ month: 'all', haveKids: filterHaveKids })
+    fetchParallelCoordinates({ month: 'all' })
       .then(response => {
-        setData(response || []);
+        const rows = response || [];
+        setAllData(rows);
+        setData(rows);
         setLoading(false);
       })
       .catch(error => {
         console.error('Error fetching PCP data:', error);
         setLoading(false);
       });
-  }, [filterHaveKids]); // Removed selectedMonth dependency
+  }, []); // Removed selectedMonth and filterHaveKids dependency
 
   useEffect(() => {
     if (!data.length || dimensions.width === 0 || dimensions.height === 0) return;
 
     // Apply cohort filters client-side to ensure density slider samples the right group
-    const filteredByKids = filterHaveKids === null ? data : data.filter(d => d.haveKids === filterHaveKids);
+    const sourceData = allData.length ? allData : data;
+    const filteredByKids = filterHaveKids === null ? sourceData : sourceData.filter(d => d.haveKids === filterHaveKids);
     const filteredByCluster = (filterCluster === null || filterCluster === undefined)
       ? filteredByKids
       : filteredByKids.filter(d => Number(d.Cluster) === Number(filterCluster));
@@ -84,15 +89,22 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
 
     // Scales
     const yScales = {};
+    // Axis domains must be stable under any toggles/filters.
+    // Use the full fetched dataset (not the filtered cohort / render subset) for domains.
+    const domainData = sourceData;
     dims.forEach(dim => {
       if (dim === 'month') {
-        const months = [...new Set(renderData.map(d => d[dim]))].sort();
+        const months = [...new Set(domainData.map(d => d[dim]).filter(Boolean))].sort();
         yScales[dim] = d3.scalePoint().domain(months).range([height, 0]).padding(0.1);
       } else if (dim === 'SavingsRate') {
         // SavingsRate is a ratio; keep axis in the interpretable range.
         yScales[dim] = d3.scaleLinear().domain([0.0, 1.0]).range([height, 0]);
       } else {
-        yScales[dim] = d3.scaleLinear().domain(d3.extent(renderData, d => d[dim])).range([height, 0]);
+        const values = domainData
+          .map(d => Number(d?.[dim]))
+          .filter(v => Number.isFinite(v));
+        const extent = values.length ? d3.extent(values) : [0, 1];
+        yScales[dim] = d3.scaleLinear().domain(extent).range([height, 0]);
       }
     });
 
@@ -100,7 +112,7 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
 
     // Color scale (match scatterplot palette)
     // IMPORTANT: Keep cluster->color mapping stable even when renderData is filtered to one cluster.
-    const clusterDomain = getSortedClusterDomain(data.map(d => d.Cluster));
+    const clusterDomain = getSortedClusterDomain(sourceData.map(d => d.Cluster));
     const colorScale = d3.scaleOrdinal().domain(clusterDomain).range(CLUSTER_COLOR_RANGE);
 
     // Line generator
@@ -255,7 +267,7 @@ function ParallelCoordinates({ selectedIds, onFilter, selectedMonth, filterHaveK
       .style('font-weight', 'bold')
       .style('font-size', '12px');
 
-  }, [data, selectedIds, sampleRate, dimensions, filterHaveKids, filterCluster]);
+  }, [data, allData, selectedIds, sampleRate, dimensions, filterHaveKids, filterCluster]);
 
   return (
     <div className="flex flex-col h-full w-full">

@@ -10,6 +10,15 @@ import HouseholdSizeStats from './TabLivingGap/HouseholdSizeStats';
 import InequalityTimeline from './TabFinancialFlow/InequalityTimeline';
 import { CLUSTER_OPTIONS, normalizeClusterValue } from './clusterHelpers';
 
+export function shouldShowFloatingDemographicControls(entry) {
+  if (!entry) return false;
+  // Only float once the controls have scrolled *above* the viewport.
+  // If the user is above the controls (controls are below), do not show the floating bar.
+  const top = entry.boundingClientRect?.top;
+  const isAboveViewport = typeof top === 'number' ? top < 0 : false;
+  return !entry.isIntersecting && isAboveViewport;
+}
+
 /**
  * Resident Financial Health Dashboard (Question 2)
  * Handles visualizations for wage vs cost of living analysis with tabbed interface
@@ -23,6 +32,8 @@ function ResidentDashboard() {
   const [brushedTimeRange, setBrushedTimeRange] = useState(null);
   const [showFloatingTimeControl, setShowFloatingTimeControl] = useState(false);
   const timeControlRef = useRef(null);
+  const demographicControlsRef = useRef(null);
+  const [showFloatingDemographicControls, setShowFloatingDemographicControls] = useState(false);
   const [driverStats, setDriverStats] = useState(null);
   const [driverStatsError, setDriverStatsError] = useState(null);
 
@@ -121,6 +132,27 @@ function ResidentDashboard() {
   }, []);
 
   useEffect(() => {
+    if (activeTab !== 2) {
+      setShowFloatingDemographicControls(false);
+      return;
+    }
+
+    const target = demographicControlsRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setShowFloatingDemographicControls(shouldShowFloatingDemographicControls(entry));
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [activeTab]);
+
+  useEffect(() => {
     let isMounted = true;
     setDriverStatsError(null);
     axios
@@ -170,6 +202,73 @@ function ResidentDashboard() {
   const handleHouseholdFocus = (value) => {
     setFilterHaveKids(prev => (prev === value ? null : value));
   };
+
+  const renderDemographicControls = (isFloating = false) => (
+    <div
+      ref={!isFloating ? demographicControlsRef : null}
+      className={`${isFloating ? 'bg-white/95 backdrop-blur' : ''} rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-600/10 via-indigo-500/5 to-purple-500/10 ${isFloating ? 'p-4 shadow-2xl' : 'p-5 shadow-sm'}`}
+    >
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-semibold tracking-widest text-blue-900/60 uppercase">Smart highlight</p>
+            <h4 className={`font-semibold text-gray-900 ${isFloating ? 'text-base' : 'text-lg'}`}>Household spotlight</h4>
+            <p className="text-sm text-blue-900/80 max-w-md">
+              Tap a chip to auto-brush the scatter plot and carry the selection through the entire dashboard.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {householdOptions.map(option => {
+              const isActive = filterHaveKids === option.value;
+              return (
+                <button
+                  key={option.label}
+                  onClick={() => handleHouseholdFocus(option.value)}
+                  className={`${baseChip} ${isActive ? chipActive : chipInactive}`}
+                >
+                  <span className={`text-xl ${isActive ? 'opacity-100' : 'opacity-70'}`}>{option.icon}</span>
+                  <div>
+                    <div className="text-sm font-semibold">{option.label}</div>
+                    <p className="text-xs text-blue-900/70">{option.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4 border-t border-white/40">
+          <div>
+            <p className="text-xs font-semibold tracking-widest text-blue-900/60 uppercase">Filter</p>
+            <h4 className={`font-semibold text-gray-900 ${isFloating ? 'text-sm' : 'text-base'}`}>Cluster</h4>
+            <p className="text-sm text-blue-900/80 max-w-md">Limits both the scatter plot and the PCP.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {CLUSTER_OPTIONS.map((opt) => {
+              const normalized = normalizeClusterValue(filterCluster);
+              const isActive = normalizeClusterValue(opt.value) === normalized;
+              return (
+                <button
+                  key={String(opt.value)}
+                  onClick={() => setFilterCluster(opt.value)}
+                  className={`rounded-full px-3 py-2 text-sm border transition ${isActive ? 'bg-white text-blue-700 border-indigo-200 shadow-sm' : 'bg-white/40 text-blue-900/80 border-white/40 hover:bg-white/60'}`}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    {opt.color ? (
+                      <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: opt.color }} />
+                    ) : (
+                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-300" />
+                    )}
+                    {opt.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   useEffect(() => {
     // Keep dashboard interactions predictable when cohort changes.
@@ -226,80 +325,20 @@ function ResidentDashboard() {
           <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
             <h4 className="font-semibold text-emerald-900 mb-1">Key discriminator: household structure</h4>
             <p>
-              The strongest split is <strong>with vs. without children</strong> (η² 83.1%). This aligns with <strong>household size</strong> (61.9%) and a strong separation by <strong>graduate education</strong> (72.0%), producing distinct “lifestyle” groups with very different savings capacity.
+              The strongest split is <strong>with vs. without children</strong> (η² 83.1%). This aligns with <strong>household size</strong> (61.9%) and a strong separation by <strong>education</strong> (72.0%), producing distinct “lifestyle” groups with very different savings capacity.
             </p>
           </div>
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
             <h4 className="font-semibold text-slate-900 mb-1">What age tells us</h4>
             <p>
-              Age is not a dominant factor here. Cluster separation is driven primarily by <strong>having kids</strong>, <strong>education (graduate)</strong>, <strong>household size</strong>, and <strong>income</strong> (38.0%). For month-to-month financial resilience, the strongest predictor of SavingsRate is <strong>cost of living</strong> (ΔR² 0.828), followed by <strong>income</strong> (0.408), <strong>household size</strong> (0.376), and <strong>having kids</strong> (0.127).
+              Age is not a dominant factor here. Cluster separation is driven primarily by <strong>having kids</strong>, <strong>education</strong>, <strong>household size</strong>, and <strong>income</strong> (38.0%). For month-to-month financial resilience, the strongest predictor of savings rate is <strong>cost of living</strong> (ΔR² 0.828), followed by <strong>income</strong> (0.408), <strong>household size</strong> (0.376), and <strong>having kids</strong> (0.127).
             </p>
           </div>
         </div>
       </div>
 
       {/* Filter Controls */}
-      <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-600/10 via-indigo-500/5 to-purple-500/10 p-5 shadow-sm">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-semibold tracking-widest text-blue-900/60 uppercase">Smart highlight</p>
-            <h4 className="text-lg font-semibold text-gray-900">Household spotlight</h4>
-            <p className="text-sm text-blue-900/80 max-w-md">
-              Tap a chip to auto-brush the scatter plot and carry the selection through the entire dashboard.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {householdOptions.map(option => {
-              const isActive = filterHaveKids === option.value;
-              return (
-                <button
-                  key={option.label}
-                  onClick={() => handleHouseholdFocus(option.value)}
-                  className={`${baseChip} ${isActive ? chipActive : chipInactive}`}
-                >
-                  <span className={`text-xl ${isActive ? 'opacity-100' : 'opacity-70'}`}>{option.icon}</span>
-                  <div>
-                    <div className="text-sm font-semibold">{option.label}</div>
-                    <p className="text-xs text-blue-900/70">{option.description}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4 border-t border-white/40">
-          <div>
-            <p className="text-xs font-semibold tracking-widest text-blue-900/60 uppercase">Filter</p>
-            <h4 className="text-base font-semibold text-gray-900">Cluster</h4>
-            <p className="text-sm text-blue-900/80 max-w-md">Limits both the scatter plot and the PCP.</p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {CLUSTER_OPTIONS.map((opt) => {
-              const normalized = normalizeClusterValue(filterCluster);
-              const isActive = normalizeClusterValue(opt.value) === normalized;
-              return (
-                <button
-                  key={String(opt.value)}
-                  onClick={() => setFilterCluster(opt.value)}
-                  className={`rounded-full px-3 py-2 text-sm border transition ${isActive ? 'bg-white text-blue-700 border-indigo-200 shadow-sm' : 'bg-white/40 text-blue-900/80 border-white/40 hover:bg-white/60'}`}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    {opt.color ? (
-                      <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: opt.color }} />
-                    ) : (
-                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-300" />
-                    )}
-                    {opt.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-      </div>
+      {renderDemographicControls(false)}
 
       {/* Visualizations */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col" style={{ height: '600px' }}>
@@ -320,7 +359,7 @@ function ResidentDashboard() {
             <ul className="list-disc ml-5 space-y-1">
               <li><strong className="text-red-600">Affluent Achievers (red)</strong>: couples and families with very high incomes who keep costs in check, appearing as high-income, high-savings outliers.</li>
               <li><strong className="text-sky-700">Stretched Households (blue)</strong>: lower-income residents with average living costs, leaving little room to save and clustering near the low-savings region.</li>
-              <li><strong className="text-orange-600">Lean Savers (orange)</strong>: mostly single adults without children, with average incomes but very low costs, achieving medium to high savings rates.</li>
+              <li><strong className="text-orange-600">Lean Savers (orange)</strong>: mostly households without children, with low to average incomes but very low costs, achieving medium to high savings rates.</li>
             </ul>
 
             <div className="mt-3 text-xs text-gray-600">
@@ -477,6 +516,14 @@ function ResidentDashboard() {
             <div className="bg-white/95 backdrop-blur border border-gray-200 rounded-2xl shadow-2xl p-4 sm:w-80">
               <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Quick adjust</div>
               {renderTimeSlider(true)}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 2 && showFloatingDemographicControls && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 px-4 z-50 w-full">
+            <div className="w-full max-w-[95%] mx-auto">
+              {renderDemographicControls(true)}
             </div>
           </div>
         )}

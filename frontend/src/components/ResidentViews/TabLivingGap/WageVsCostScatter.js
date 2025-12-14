@@ -7,6 +7,16 @@ import { CLUSTER_COLOR_RANGE, getSortedClusterDomain } from '../colorHelpers';
  * Wage vs Cost of Living Scatter Plot
  * Shows relationship between wages and living costs
  */
+export function getScatterDomainData(rows, xMax) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  return safeRows.filter(d => {
+    if (!d) return false;
+    if (typeof d.CostOfLiving !== 'number' || !Number.isFinite(d.CostOfLiving)) return false;
+    if (typeof d.Income !== 'number' || !Number.isFinite(d.Income)) return false;
+    return d.CostOfLiving <= xMax;
+  });
+}
+
 function WageVsCostScatter({ onFilter, filterHaveKids, filterCluster, selectedMonth, selectedIds, brushedTimeRange }) {
   const containerRef = useRef();
   const svgRef = useRef();
@@ -97,13 +107,9 @@ function WageVsCostScatter({ onFilter, filterHaveKids, filterCluster, selectedMo
     // User requested capping Cost of Living at ~4000 AND filtering data
     const xMax = 4000; 
     
-    // Base cohort for scale domains: apply xMax + haveKids only.
-    // This keeps axes stable when switching cluster filters.
-    const domainData = data.filter(d => {
-      if (d.CostOfLiving > xMax) return false;
-      if (filterHaveKids === null || filterHaveKids === undefined) return true;
-      return d.haveKids === filterHaveKids;
-    });
+    // Axis domains should remain static regardless of toggles/filters.
+    // Only apply the fixed xMax cap when computing scale domains.
+    const domainData = getScatterDomainData(data, xMax);
 
     // Visible points: apply xMax + haveKids + cluster.
     const filteredData = data.filter(d => {
