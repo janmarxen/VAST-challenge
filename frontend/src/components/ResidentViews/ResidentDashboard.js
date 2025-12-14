@@ -36,6 +36,47 @@ function ResidentDashboard() {
   const [showFloatingDemographicControls, setShowFloatingDemographicControls] = useState(false);
   const [driverStats, setDriverStats] = useState(null);
   const [driverStatsError, setDriverStatsError] = useState(null);
+  const [clusterMedians, setClusterMedians] = useState(null);
+  const [clusterMediansError, setClusterMediansError] = useState(null);
+
+  const median = (values) => {
+    const xs = (Array.isArray(values) ? values : [])
+      .map((v) => Number(v))
+      .filter((v) => Number.isFinite(v))
+      .sort((a, b) => a - b);
+    if (xs.length === 0) return null;
+    const mid = Math.floor(xs.length / 2);
+    if (xs.length % 2 === 1) return xs[mid];
+    return (xs[mid - 1] + xs[mid]) / 2;
+  };
+
+  const currency = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  });
+
+  const formatPct = (value) => {
+    const v = Number(value);
+    if (!Number.isFinite(v)) return '—';
+    return `${(v * 100).toFixed(1)}%`;
+  };
+
+  const formatClusterAnchor = (clusterId) => {
+    if (!clusterMedians) return null;
+    const m = clusterMedians[String(clusterId)];
+    if (!m) return null;
+
+    const income = m.incomeMedian;
+    const cost = m.costMedian;
+    const savings = m.savingsRateMedian;
+
+    const incomeText = Number.isFinite(income) ? currency.format(income) : '—';
+    const costText = Number.isFinite(cost) ? currency.format(cost) : '—';
+    const savingsText = formatPct(savings);
+
+    return `Median: Income ${incomeText} • Cost ${costText} • Savings ${savingsText}`;
+  };
 
   const formatDriverFeatureLabel = (feature) => {
     if (!feature) return '';
@@ -170,6 +211,47 @@ function ResidentDashboard() {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    setClusterMediansError(null);
+
+    axios
+      .get(`/api/resident/parallel-coordinates?month=${encodeURIComponent(selectedMonth)}`)
+      .then((resp) => {
+        if (!isMounted) return;
+        const rows = Array.isArray(resp.data) ? resp.data : [];
+
+        const byCluster = new Map();
+        rows.forEach((row) => {
+          const cluster = row?.Cluster;
+          if (cluster === null || cluster === undefined) return;
+          const key = String(Number(cluster));
+          if (!byCluster.has(key)) byCluster.set(key, []);
+          byCluster.get(key).push(row);
+        });
+
+        const medians = {};
+        for (const [clusterKey, clusterRows] of byCluster.entries()) {
+          medians[clusterKey] = {
+            incomeMedian: median(clusterRows.map((r) => r?.Income)),
+            costMedian: median(clusterRows.map((r) => r?.CostOfLiving)),
+            savingsRateMedian: median(clusterRows.map((r) => r?.SavingsRate)),
+          };
+        }
+
+        setClusterMedians(medians);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setClusterMedians(null);
+        setClusterMediansError(err?.message || 'Failed to load cluster medians');
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedMonth]);
 
   const renderTimeSlider = (isCompact = false) => (
     <>
@@ -315,25 +397,40 @@ function ResidentDashboard() {
           Clusters highlight a few recurring household "lifestyles" and how each group balances income, costs and savings.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-900 mb-1">How to read this tab</h4>
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <h4 className="font-semibold text-red-900 mb-1">Affluent Achievers (red)</h4>
             <p>
-              Start with the <strong>Living Gap</strong> scatter: residents below the red line spend more than they earn.
-              Then use the <strong>Demographic Pattern Finder</strong> to see how household size, costs and savings differ across clusters.
+              Couples and families that <em>tend to</em> have very high incomes while keeping costs relatively controlled,
+              appearing as high-income, high-savings outliers.
             </p>
+            {formatClusterAnchor(2) && (
+              <div className="text-xs text-gray-600 mt-2">{formatClusterAnchor(2)}</div>
+            )}
           </div>
-          <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
-            <h4 className="font-semibold text-emerald-900 mb-1">Key discriminator: household structure</h4>
+          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+            <h4 className="font-semibold text-orange-900 mb-1">Lean Savers (orange)</h4>
             <p>
-              The strongest split is <strong>with vs. without children</strong> (η² 83.1%). This aligns with <strong>household size</strong> (61.9%) and a strong separation by <strong>education</strong> (72.0%), producing distinct “lifestyle” groups with very different savings capacity.
+              Households who <em>tend to</em> maintain a slightly lower cost burden relative to income (even at modest
+              incomes), enabling medium-to-high savings rates, often aligned with smaller households / no kids.
             </p>
+            {formatClusterAnchor(1) && (
+              <div className="text-xs text-gray-600 mt-2">{formatClusterAnchor(1)}</div>
+            )}
           </div>
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-            <h4 className="font-semibold text-slate-900 mb-1">What age tells us</h4>
+          <div className="bg-sky-50 p-4 rounded-lg border border-sky-200">
+            <h4 className="font-semibold text-sky-900 mb-1">Stretched Households (blue)</h4>
             <p>
-              Age is not a dominant factor here. Cluster separation is driven primarily by <strong>having kids</strong>, <strong>education</strong>, <strong>household size</strong>, and <strong>income</strong> (38.0%). For month-to-month financial resilience, the strongest predictor of savings rate is <strong>cost of living</strong> (ΔR² 0.828), followed by <strong>income</strong> (0.408), <strong>household size</strong> (0.376), and <strong>having kids</strong> (0.127).
+              Residents who <em>tend to</em> face a tighter budget, lower incomes with similar day-to-day costs, leading to
+              lower savings capacity and a higher cost burden relative to income.
             </p>
+            {formatClusterAnchor(0) && (
+              <div className="text-xs text-gray-600 mt-2">{formatClusterAnchor(0)}</div>
+            )}
           </div>
+        </div>
+        <div className="mt-3 text-xs text-gray-500">
+          Clusters overlap; labels summarize dominant patterns, not strict rules.
+          {clusterMediansError ? ` (Anchors unavailable: ${clusterMediansError})` : ''}
         </div>
       </div>
 
@@ -355,13 +452,6 @@ function ResidentDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col min-h-[780px]">
           <div className="mb-3 text-sm text-gray-700">
-            <p className="mb-1"><strong>Cluster personas:</strong></p>
-            <ul className="list-disc ml-5 space-y-1">
-              <li><strong className="text-red-600">Affluent Achievers (red)</strong>: couples and families with very high incomes who keep costs in check, appearing as high-income, high-savings outliers.</li>
-              <li><strong className="text-sky-700">Stretched Households (blue)</strong>: lower-income residents with average living costs, leaving little room to save and clustering near the low-savings region.</li>
-              <li><strong className="text-orange-600">Lean Savers (orange)</strong>: mostly households without children, with low to average incomes but very low costs, achieving medium to high savings rates.</li>
-            </ul>
-
             <div className="mt-3 text-xs text-gray-600">
               <p className="mb-1"><strong>Top drivers (data-backed):</strong></p>
               {driverStatsError ? (
@@ -383,12 +473,12 @@ function ResidentDashboard() {
                       </ol>
                     </div>
                     <div>
-                      <p className="mb-1 font-semibold text-gray-700">SavingsRate predictors (perm. importance)</p>
+                      <p className="mb-1 font-semibold text-gray-700">Savings rate predictors (ΔR²)</p>
                       <ol className="list-decimal ml-5 space-y-0.5">
                         {(driverStats.savings_predictors?.permutation_importance || []).map((d) => (
                           <li key={d.feature}>
                             <span className="font-medium">{formatDriverFeatureLabel(d.feature)}</span>{' '}
-                            <span className="text-gray-500">(ΔR² {Number(d.importance_mean).toFixed(3)})</span>
+                            <span className="text-gray-500">({Number(d.importance_mean).toFixed(3)})</span>
                           </li>
                         ))}
                       </ol>
