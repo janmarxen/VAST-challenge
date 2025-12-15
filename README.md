@@ -7,19 +7,17 @@ This submission release contains a containerized backend (Flask API) and fronten
 - Docker Compose (v2)
 
 ## Getting the Files
-Release link: 
-https://github.com/janmarxen/VAST-challenge/releases/tag/submission-v1.0.0 
+Download the release bundle from:
+https://github.com/janmarxen/VAST-challenge/releases/tag/submission-v1.0.0
 
-Instead of building the application yourself, please download the following file from the release: `vast-submission.tar.gz`.
-
-Files inside this zip are:
+For the simplest setup, download `vast-submission.tar.gz` (prebuilt images + cached data). It contains:
 - `backend.tar` - pre-built backend Docker image
 - `frontend.tar` - pre-built frontend Docker image
-- `docker-compose.yml` - production docker composer
+- `docker-compose.yml` - production Docker Compose file
 - `processed.tar.gz` - precomputed `data/processed` cache (recommended)
 - `README.md` - instructions
 
-Now you need to extract them and follow the instructions.
+Extract the bundle, then follow the steps below.
 
 #### Linux / macOS
 Open a terminal in the folder where `vast-submission.tar.gz` is located and run:
