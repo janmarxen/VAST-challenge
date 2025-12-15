@@ -13,3 +13,16 @@ build/
 *.zip
 data/
 *.tar
+
+# LaTeX auxiliary files
+*.aux
+*.fdb_latexmk
+*.fls
+*.nav
+*.snm
+*.toc
+*.out
+*.synctex.gz
+*.log
+*.bbl
+*.blg
