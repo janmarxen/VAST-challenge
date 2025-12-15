@@ -12,3 +12,4 @@ build/
 *.log
 *.zip
 data/
+*.tar
