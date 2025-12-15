@@ -29,12 +29,12 @@
 % Custom title page with Ohio map
 \begin{frame}[plain]
     \centering
-    \vspace{0.3cm}
+    \vspace{0.7cm}
     {\Huge\bfseries Pulse of Engagement}\\[0.25cm]
     {\large Visual Analytics for Economic Health in Engagement, OH}\\[0.1cm]
     {\small VAST Challenge 2022 -- Challenge 3}\\[0.4cm]
     {\normalsize Thomas Gantz \quad Michal Sterzel \quad Jan Marxen}\\[0.2cm]
-    {\small December 2025}\\[0.3cm]
+    {\small December 2025}\\[0.1cm]
     \includegraphics[width=0.35\textwidth]{img/ohio-map-on-white-background-free-vector.jpg}
 \end{frame}
 
@@ -452,7 +452,7 @@
         \begin{column}{0.32\textwidth}
             \centering
             \begin{tikzpicture}
-                \node[rectangle, draw, rounded corners, fill=orange!20, minimum width=2.2cm, minimum height=0.8cm, font=\scriptsize, align=center] {Stability \\&\\Retention};
+                \node[rectangle, draw, rounded corners, fill=orange!20, minimum width=2.2cm, minimum height=0.8cm, font=\scriptsize, align=center] {Stability \\\&\\Retention};
             \end{tikzpicture}
             \footnotesize
             \begin{itemize}\setlength{\itemsep}{1pt}
@@ -464,7 +464,7 @@
         \begin{column}{0.32\textwidth}
             \centering
             \begin{tikzpicture}
-                \node[rectangle, draw, rounded corners, fill=green!20, minimum width=2.2cm, minimum height=0.8cm, font=\scriptsize, align=center] {Mobility \\&\\Context};
+                \node[rectangle, draw, rounded corners, fill=green!20, minimum width=2.2cm, minimum height=0.8cm, font=\scriptsize, align=center] {Mobility \\\&\\Context};
             \end{tikzpicture}
             \footnotesize
             \begin{itemize}\setlength{\itemsep}{1pt}
@@ -603,36 +603,6 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{City-Wide Employment Context}
-    \framesubtitle{Question 3: Employer Health}
-    \vspace{4pt}
-    \centering
-    \includegraphics[width=0.85\textwidth,height=0.72\textheight,keepaspectratio]{img/employment_trends.png}
-    \vspace{6pt}
-    \footnotesize
-    Indicates workforce reallocation and churn rather than city-wide employment collapse.
-\end{frame}
-
-\begin{frame}{Employer Market Share}
-    \framesubtitle{Question 3: Employer Health}
-    \vspace{4pt}
-    \centering
-    \includegraphics[width=0.85\textwidth,height=0.72\textheight,keepaspectratio]{img/market_share.png}
-    \vspace{6pt}
-    \footnotesize
-    After the initial workforce shift, top employer concentration remains stable.
-\end{frame}
-
-\begin{frame}{Estimated Monthly Payroll}
-    \framesubtitle{Question 3: Employer Health}
-    \vspace{4pt}
-    \centering
-    \includegraphics[width=0.95\textwidth,height=0.72\textheight,keepaspectratio]{img/monthly_payroll.png}
-    \vspace{6pt}
-    \footnotesize
-    Adds economic scale to the analysis, highlighting the impact of large employers.
-\end{frame}
-
 % ==============================================================================
 \section{Design Decisions}
 % ==============================================================================
@@ -642,27 +612,27 @@
         \begin{column}{0.48\textwidth}
             \textbf{Frontend}
             \begin{itemize}
-                \item \textbf{React 18} -- Component architecture
-                \item \textbf{D3.js v7} -- Visualization rendering
-                \item \textbf{TailwindCSS} -- Styling
-                \item \textbf{Axios} -- API communication
+                \item \textbf{React 18:} Component architecture
+                \item \textbf{D3.js v7:} Visualization rendering
+                \item \textbf{TailwindCSS:} Styling
+                \item \textbf{Axios:} API communication
             \end{itemize}
             
             \vspace{8pt}
             \textbf{Infrastructure}
             \begin{itemize}
-                \item \textbf{Docker Compose} -- Orchestration
-                \item \textbf{Nginx} -- Reverse proxy
+                \item \textbf{Docker Compose:} Orchestration
+                \item \textbf{Nginx:} Reverse proxy
             \end{itemize}
         \end{column}
         \begin{column}{0.48\textwidth}
             \textbf{Backend}
             \begin{itemize}
-                \item \textbf{Python 3.11} -- Core language
-                \item \textbf{Flask} -- REST API
-                \item \textbf{Pandas/NumPy} -- Data processing
-                \item \textbf{Scikit-learn} -- K-Means clustering
-                \item \textbf{Pytest} -- Testing
+                \item \textbf{Python 3.11:} Core language
+                \item \textbf{Flask:} REST API
+                \item \textbf{Pandas/NumPy:} Data processing
+                \item \textbf{Scikit-learn:} K-Means clustering
+                \item \textbf{Pytest:} Testing
             \end{itemize}
         \end{column}
     \end{columns}
@@ -670,12 +640,12 @@
     \vspace{12pt}
     \centering
     \begin{tikzpicture}[scale=0.85]
-        \node[rectangle, draw, rounded corners, fill=blue!15, minimum width=2.2cm, minimum height=0.7cm, font=\scriptsize] (fe) at (-3.5,0) {React + D3.js};
+        \node[rectangle, draw, rounded corners, fill=blue!15, minimum width=2.2cm, minimum height=0.7cm, font=\scriptsize] (fe) at (-5.0,0) {React + D3.js};
         \node[rectangle, draw, rounded corners, fill=green!15, minimum width=2.2cm, minimum height=0.7cm, font=\scriptsize] (be) at (0,0) {Flask API};
-        \node[rectangle, draw, rounded corners, fill=gray!15, minimum width=2.2cm, minimum height=0.7cm, font=\scriptsize] (data) at (3.5,0) {CSV Data};
+        \node[rectangle, draw, rounded corners, fill=gray!15, minimum width=2.2cm, minimum height=0.7cm, font=\scriptsize] (data) at (5.0,0) {CSV Data};
         
-        \draw[->, thick] (fe) -- node[above, font=\tiny] {REST} (be);
-        \draw[->, thick] (be) -- node[above, font=\tiny] {Pandas} (data);
+        \draw[->, thick] (fe) -- node[above, font=\footnotesize] {REST} (be);
+        \draw[->, thick] (be) -- node[above, font=\footnotesize] {Pandas} (data);
     \end{tikzpicture}
 \end{frame}
 
@@ -728,24 +698,29 @@
 \begin{frame}{Lessons Learned}
     \begin{columns}
         \begin{column}{0.48\textwidth}
-            \textbf{What Worked Well}
-            \begin{itemize}
-                \item \textcolor{green!60!black}{\faCheck} Docker for reproducibility
-                \item \textcolor{green!60!black}{\faCheck} Clear question separation
-                \item \textcolor{green!60!black}{\faCheck} Caching for large datasets
-                \item \textcolor{green!60!black}{\faCheck} Test-driven development
+            \textbf{\faThumbsUp\ What Worked Well}
+            \vspace{0.1cm}
+            \begin{itemize} \small
+                \item[\textcolor{green!60!black}{\faCheck}] Docker for reproducibility
+                \item[\textcolor{green!60!black}{\faCheck}] Clear question separation
+                \item[\textcolor{green!60!black}{\faCheck}] Caching for large datasets
+                \item[\textcolor{green!60!black}{\faCheck}] Test-driven development
             \end{itemize}
         \end{column}
         \begin{column}{0.48\textwidth}
-            \textbf{Challenges}
-            \begin{itemize}
-                \item \textcolor{red!60!black}{\faTimes} TODO
+            \textbf{\faExclamationTriangle\ Challenges}
+            \vspace{0.1cm}
+            \begin{itemize} \small
+                \item[\textcolor{orange}{\faDatabase}] Large dataset with uneven distributions
+                \item[\textcolor{orange}{\faBalanceScale}] Balancing detail vs. overview 
+                \item[\textcolor{orange}{\faClock}] Pre-processing for real-time usage
             \end{itemize}
             
-            \vspace{8pt}
-            \textbf{Would Do Differently}
-            \begin{itemize}
-                \item TODO
+            \vspace{15pt}
+            \textbf{\faRedo\ Would Do Differently}
+            \vspace{0.1cm}
+            \begin{itemize} \small
+                \item[\textcolor{red}{\faSearch}] More upfront data profiling
             \end{itemize}
         \end{column}
     \end{columns}
@@ -757,13 +732,13 @@
 
 \begin{frame}{}
     \centering
-    \vspace{1.5cm}
+    \vspace{0.5cm}
     {\Huge \textbf{Thank You!}}
     
-    \vspace{1cm}
+    \vspace{0.5cm}
     {\large Questions?}
     
-    \vspace{1cm}
+    \vspace{0.7cm}
     \begin{tabular}{ccc}
         Thomas Gantz & Jan Marxen & Michal Sterzel \\
         \scriptsize Q1: Business & \scriptsize Q2: Residents & \scriptsize Q3: Employers \\
