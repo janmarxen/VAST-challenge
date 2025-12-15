@@ -76,17 +76,6 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Our Solution: Pulse of Engagement}
-    \centering
-    \vspace{5pt}
-    
-    % TODO: Replace with actual screenshot of the main dashboard
-    \fbox{\parbox{0.85\textwidth}{\centering\vspace{2cm}\textbf{[SCREENSHOT: Main Dashboard Overview]}\\\small Show the tabbed interface with all three question areas\vspace{2cm}}}
-    
-    \vspace{10pt}
-    \small
-    Interactive web application built with \textbf{React + D3.js} frontend and \textbf{Python Flask} backend
-\end{frame}
 
 % ==============================================================================
 \section{Question 1: Business Prosperity}
@@ -205,15 +194,26 @@
 % ==============================================================================
 
 \begin{frame}{Q2: Analysis Approach}
-    \vspace{-5pt}
-    \textbf{Three Complementary Lenses}
-    \vspace{5pt}
+    \vspace{-6pt}
+    \centering
+    \begin{tikzpicture}[
+        box/.style={rectangle, draw, rounded corners, minimum width=2.4cm, minimum height=0.75cm, font=\scriptsize, align=center},
+        arr/.style={->, thick}
+    ]
+        \node[box, fill=gray!15] (data) {Resident data\\(income, costs, household)};
+        \node[box, fill=orange!20, below left=10pt and 18pt of data] (cluster) {Geographic\\context};
+        \node[box, fill=green!20, below right=10pt and 18pt of data] (ineq) {Inequality\\(over time)};
+        \node[box, fill=blue!20, below=22pt of data] (geo) {Clustering\\(K-Means)};
+
+        \draw[arr] (data) -- (cluster);
+        \draw[arr] (data) -- (ineq);
+        \draw[arr] (data) -- (geo);
+    \end{tikzpicture}
+
+    \vspace{4pt}
     \begin{columns}[T]
         \begin{column}{0.32\textwidth}
             \centering
-            \begin{tikzpicture}
-                \node[rectangle, draw, rounded corners, fill=blue!20, minimum width=1.8cm, minimum height=0.8cm, font=\scriptsize, align=center] {Geographic};
-            \end{tikzpicture}
             \footnotesize
             \begin{itemize}\setlength{\itemsep}{1pt}
                 \item Building heatmap
@@ -223,26 +223,20 @@
         \end{column}
         \begin{column}{0.32\textwidth}
             \centering
-            \begin{tikzpicture}
-                \node[rectangle, draw, rounded corners, fill=orange!20, minimum width=1.8cm, minimum height=0.8cm, font=\scriptsize, align=center] {Demographic};
-            \end{tikzpicture}
             \footnotesize
             \begin{itemize}\setlength{\itemsep}{1pt}
-                \item Wage vs. cost
-                \item K-Means clustering
-                \item Savings drivers
+                \item Wage vs. cost features
+                \item K-Means segmentation
+                \item Personas \& drivers
             \end{itemize}
         \end{column}
         \begin{column}{0.32\textwidth}
             \centering
-            \begin{tikzpicture}
-                \node[rectangle, draw, rounded corners, fill=green!20, minimum width=1.8cm, minimum height=0.8cm, font=\scriptsize, align=center] {Trajectories};
-            \end{tikzpicture}
             \footnotesize
             \begin{itemize}\setlength{\itemsep}{1pt}
+                \item Expense dynamics over time
+                \item Inequality trends (Gini)
                 \item Income vs. expenses
-                \item Inequality trends
-                \item Time evolution
             \end{itemize}
         \end{column}
     \end{columns}
@@ -441,48 +435,202 @@
 \section{Question 3: Employer Health}
 % ==============================================================================
 
-\begin{frame}{Q3: Employer Health \& Turnover}
-    \centering
-    \vspace{1cm}
-    
-    {\Large \textbf{[PLACEHOLDER FOR MICHAL]}}
-    
-    \vspace{1cm}
-    
-    \begin{itemize}
-        \item Employment patterns across the city
-        \item Turnover rate analysis
-        \item High/low turnover areas
-    \end{itemize}
-    
-    \vspace{1cm}
-    
-    % TODO: Add screenshots of employer visualizations
-    \fbox{\parbox{0.7\textwidth}{\centering\vspace{1.5cm}\textbf{[SCREENSHOT: Employer Visualizations]}\vspace{1.5cm}}}
-\end{frame}
-
-\begin{frame}{Q3: Key Findings}
-    \centering
-    \vspace{1cm}
-    
-    {\Large \textbf{[PLACEHOLDER FOR MICHAL]}}
-    
-    \vspace{1cm}
-    
-    \begin{columns}
-        \begin{column}{0.48\textwidth}
-            \textbf{Healthy Employers}
-            \begin{itemize}
-                \item [To be filled by teammate]
+\begin{frame}{Employer Health: Methodology \& Approach}
+    \begin{columns}[T]
+        \begin{column}{0.32\textwidth}
+            \centering
+            \begin{tikzpicture}
+                \node[rectangle, draw, rounded corners, fill=blue!20, minimum width=2.2cm, minimum height=0.8cm, font=\scriptsize, align=center] {Workforce\\Dynamics};
+            \end{tikzpicture}
+            \footnotesize
+            \begin{itemize}\setlength{\itemsep}{1pt}
+                \item Turnover, hires, quits, net change
+                \item Identifies extreme churn and instability
+                \item Focus on employer-level change intensity
             \end{itemize}
         \end{column}
-        \begin{column}{0.48\textwidth}
-            \textbf{High Turnover Areas}
-            \begin{itemize}
-                \item [To be filled by teammate]
+        \begin{column}{0.32\textwidth}
+            \centering
+            \begin{tikzpicture}
+                \node[rectangle, draw, rounded corners, fill=orange!20, minimum width=2.2cm, minimum height=0.8cm, font=\scriptsize, align=center] {Stability \\&\\Retention};
+            \end{tikzpicture}
+            \footnotesize
+            \begin{itemize}\setlength{\itemsep}{1pt}
+                \item Turnover vs. average tenure
+                \item Headcount as contextual factor
+                \item Distinguishes stable vs. high-risk employers
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.32\textwidth}
+            \centering
+            \begin{tikzpicture}
+                \node[rectangle, draw, rounded corners, fill=green!20, minimum width=2.2cm, minimum height=0.8cm, font=\scriptsize, align=center] {Mobility \\&\\Context};
+            \end{tikzpicture}
+            \footnotesize
+            \begin{itemize}\setlength{\itemsep}{1pt}
+                \item Job-to-job flows between employers
+                \item Geographic concentration of churn
+                \item City-level employment and economic scale
             \end{itemize}
         \end{column}
     \end{columns}
+\end{frame}
+
+\begin{frame}{Employer Turnover Ranking}
+    \begin{columns}[T]
+        \begin{column}{0.45\textwidth}
+            	\textbf{Ranking Methodology}
+            \footnotesize
+            \begin{itemize}\setlength{\itemsep}{2pt}
+                \item Ranks employers by turnover, hires, quits, or net change
+                \item Focuses on upper tail of workforce churn
+                \item Highlights extreme instability cases
+            \end{itemize}
+            
+            \vspace{6pt}
+            	\textbf{Key Observation}
+            \begin{itemize}\setlength{\itemsep}{2pt}
+                \item Some employers exceed 100\% turnover
+                \item Driven by small average headcounts
+                \item Indicates intense, concentrated churn
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.52\textwidth}
+            \centering
+            \includegraphics[width=\textwidth,height=0.80\textheight,keepaspectratio]{img/turnover_ranking.png}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Turnover vs. Workforce Tenure}
+    \begin{columns}[T]
+        \begin{column}{0.45\textwidth}
+            	\textbf{Inverse Relationship}
+            \footnotesize
+            \begin{itemize}\setlength{\itemsep}{2pt}
+                \item Clear separation into two regimes
+                \item \textbf{Stability Zone}: low turnover, high tenure
+                \item \textbf{Instability Zone}: high turnover, low tenure
+            \end{itemize}
+            
+            \vspace{6pt}
+            	\textbf{Bubble Size}
+            \begin{itemize}\setlength{\itemsep}{2pt}
+                \item Encodes employer headcount
+                \item Size alone does not guarantee stability
+                \item High-risk large employers amplify impact
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.52\textwidth}
+            \centering
+            \includegraphics[width=\textwidth,height=0.80\textheight,keepaspectratio]{img/stability_overview.png}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Worker Mobility Between Employers}
+    \begin{columns}[T]
+        \begin{column}{0.45\textwidth}
+            	\textbf{Job-to-Job Flows}
+            \footnotesize
+            \begin{itemize}\setlength{\itemsep}{2pt}
+                \item Directional worker movement
+                \item Some employers act as labor sources
+                \item Others function as recipients
+            \end{itemize}
+            
+            \vspace{6pt}
+            	\textbf{Network Effects}
+            \begin{itemize}\setlength{\itemsep}{2pt}
+                \item Worker movement links employers
+                \item Instability propagates through network
+                \item Asymmetry reveals labor market structure
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.52\textwidth}
+            \centering
+            \includegraphics[width=\textwidth,height=0.80\textheight,keepaspectratio]{img/job_flow.png}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Short-Term Workforce Growth \& Decline}
+    \vspace{-3pt}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \centering
+            	\textbf{Non-highlighted View}\\[3pt]
+            \includegraphics[width=\textwidth,height=0.45\textheight,keepaspectratio]{img/employee_count_trends.png}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \centering
+            	\textbf{Highlighted View}\\[3pt]
+            \includegraphics[width=\textwidth,height=0.45\textheight,keepaspectratio]{img/employee_count_trends_turnover_showcase.png}
+        \end{column}
+    \end{columns}
+    \vspace{4pt}
+    \footnotesize
+    \begin{itemize}\setlength{\itemsep}{1pt}
+        \item Step-line chart: only days with changes
+        \item Abrupt spikes and drops
+        \item Reflects short-term, episodic workforce adjustments within the observed period
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Geographic Concentration of Employer Instability}
+    \begin{columns}[T]
+        \begin{column}{0.45\textwidth}
+            	\textbf{Building-Level Aggregation}
+            \footnotesize
+            \begin{itemize}\setlength{\itemsep}{2pt}
+                \item Turnover aggregated to building level
+                \item Clear spatial hotspots visible
+                \item Identifies localized instability clusters
+            \end{itemize}
+            
+            \vspace{6pt}
+            	\textbf{Implications}
+            \begin{itemize}\setlength{\itemsep}{2pt}
+                \item Workforce instability concentrates spatially
+                \item Not uniformly distributed across city
+                \item Suggests local economic stressors
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.52\textwidth}
+            \centering
+            \includegraphics[width=\textwidth,height=0.80\textheight,keepaspectratio]{img/geographic_turnover_map.png}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{City-Wide Employment Context}
+    \framesubtitle{Question 3: Employer Health}
+    \vspace{4pt}
+    \centering
+    \includegraphics[width=0.85\textwidth,height=0.72\textheight,keepaspectratio]{img/employment_trends.png}
+    \vspace{6pt}
+    \footnotesize
+    Indicates workforce reallocation and churn rather than city-wide employment collapse.
+\end{frame}
+
+\begin{frame}{Employer Market Share}
+    \framesubtitle{Question 3: Employer Health}
+    \vspace{4pt}
+    \centering
+    \includegraphics[width=0.85\textwidth,height=0.72\textheight,keepaspectratio]{img/market_share.png}
+    \vspace{6pt}
+    \footnotesize
+    After the initial workforce shift, top employer concentration remains stable.
+\end{frame}
+
+\begin{frame}{Estimated Monthly Payroll}
+    \framesubtitle{Question 3: Employer Health}
+    \vspace{4pt}
+    \centering
+    \includegraphics[width=0.95\textwidth,height=0.72\textheight,keepaspectratio]{img/monthly_payroll.png}
+    \vspace{6pt}
+    \footnotesize
+    Adds economic scale to the analysis, highlighting the impact of large employers.
 \end{frame}
 
 % ==============================================================================
