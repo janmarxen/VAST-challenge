@@ -69,7 +69,7 @@ a:visited {
 </head>
 <body>
 
-<h2 class="calibri center">Entry Name: "EngageViz"</h2>
+<h2 class="calibri center">Entry Name: "Pulse of Engagement"</h2>
 
 <h2 class="calibri center">VAST Challenge 2022<br><u>Challenge 3</u></h2>
 
@@ -138,11 +138,14 @@ We looked at resident financial health from three angles: where financial stress
 </p>
 
 <p class="calibri">
-<b>Wages vs. Cost of Living.</b> The Living Gap scatter plot (Figure 3) puts wages against total living costs and makes the break-even line an immediate reference point. Most residents sit on the surplus side, but the dense band near break-even suggests many households have only a thin “buffer” month to month (Figure 3). When filtering by household type, families with children cluster noticeably closer to break-even than households without children (Figures 4 &amp; 5), even when incomes overlap—consistent with higher fixed costs.
+</p>
+
+<p class="calibri">
+<b>Wages vs. Cost of Living.</b> The Living Gap scatter plot (Figure 3) puts wages against total living costs and makes the break-even line an immediate reference point. Most residents sit on the surplus side, but the dense band near break-even suggests many households have only a thin “buffer” month to month (Figure 3). When filtering by household type, the “with children” group shifts right (Figures 4 &amp; 5), indicating higher living costs; the main takeaway is the higher cost burden rather than a fundamentally different income distribution.
 </p>
 
 <p class="calibri" style="text-align:center;">
-  <img src="./img/living_gap_all.png" alt="Living Gap All Residents" style="max-width:90%; margin:10px;"><br>
+  <img src="./img/scatter.png" alt="Living Gap All Residents" style="max-width:70%; margin:10px;"><br>
   <i>Figure 3: All residents.</i><br><br>
   <img src="./img/living_gap_w_child.png" alt="Living Gap With Children" style="max-width:90%; margin:10px;"><br>
   <i>Figure 4: Families with children.</i><br><br>
@@ -151,13 +154,13 @@ We looked at resident financial health from three angles: where financial stress
 </p>
 
 <p class="calibri">
-<b>Cluster Patterns.</b> Using k-means, we get three recurring “financial personas” (Figure 6): <b>Affluent Achievers</b> (very high incomes and high savings), <b>Stretched Households</b> (lower incomes with tighter budgets and lower savings capacity), and <b>Lean Savers</b> (modest-to-moderate incomes with slightly lower cost burden relative to income, enabling somewhat higher savings than Stretched). These personas overlap; labels summarize dominant tendencies rather than strict rules. In April 2022 (the month shown in Figures 3–7), the medians (Income / Cost / SavingsRate) were: <b>Affluent</b> $5,756 / $1,419 / 76.6%, <b>Stretched</b> $2,869 / $1,405 / 51.0%, and <b>Lean</b> $3,352 / $1,586 / 54.5%. Importantly, the clearest cluster separation signals come from household composition and education: <b>having kids</b> (η² 83.1%), <b>graduate education</b> (η² 72.0%), <b>household size</b> (η² 61.9%), and <b>income</b> (η² 38.0%). The parallel coordinates plot (Figure 6) then helps validate how these personas differ across income, total costs, and savings.
+<b>Cluster Patterns.</b> Using k-means, we get three recurring “financial personas”: <b>Affluent Achievers</b> (very high incomes and high savings), <b>Stretched Households</b> (lower incomes with tighter budgets and lower savings capacity), and <b>Lean Savers</b> (modest-to-moderate incomes with a different cost/income balance than Stretched). These personas overlap; labels summarize dominant tendencies rather than strict rules. In April 2022 (the month shown in Figures 3–7), the medians (Income / Cost / Savings Rate) were: <b>Affluent</b> $5,756 / $1,419 / 76.6%, <b>Stretched</b> $2,869 / $1,405 / 51.0%, and <b>Lean</b> $3,352 / $1,586 / 54.5%. The clearest separation signals in demographics are <b>having kids</b> (η² 83.1%), <b>graduate education</b> (η² 72.0%), <b>household size</b> (η² 61.9%), and <b>income</b> (η² 38.0%). Figures 6–7 illustrate that our visualizations can be filtered by cluster: we show the <b>Affluent Achievers</b> profile in the parallel coordinates plot (Figure 6) and their Living Gap scatter distribution (Figure 7).
 </p>
 
 <p class="calibri" style="text-align:center;">
-  <img src="./img/demographic_parallel_plot.png" alt="Parallel Coordinates Clusters" style="max-width:55%; margin:10px;">
-  <img src="./img/demographic_savings_rates.png" alt="Savings by Demographics" style="max-width:28%; margin:10px;"><br>
-  <i>Figure 6 (left): Parallel coordinates showing cluster profiles. Figure 7 (right): Savings rates by education and household size.</i>
+    <img src="./img/affluent_PCP.png" alt="Affluent Achievers PCP" style="max-width:55%; margin:10px;">
+    <img src="./img/affluent_scatter.png" alt="Affluent Achievers Living Gap Scatter" style="max-width:40%; margin:10px;"><br>
+    <i>Figure 6 (left): Parallel coordinates profile for the Affluent Achievers cluster. Figure 7 (right): Living Gap scatter filtered to the same cluster.</i>
 </p>
 
 <p class="calibri">
@@ -171,12 +174,16 @@ We looked at resident financial health from three angles: where financial stress
 </p>
 
 <p class="calibri" style="text-align:center;">
-  <img src="./img/inequality_timeline.png" alt="Inequality Timeline" style="max-width:60%; margin:10px;"><br>
-  <i>Figure 10: Gini coefficient for income (blue) and savings rate (red) over time. The formula G = (2 * sum(i * yi)) / (n * sum(yi)) - (n+1)/n measures inequality from 0 (equal) to 1 (unequal).</i>
+    <img src="./img/gini_inequality.png" alt="Inequality Timeline" style="max-width:80%; margin:10px;"><br>
+    <i>Figure 10: Gini coefficient for income (blue) and savings rate (red) over time. The formula G = (2 * sum(i * yi)) / (n * sum(yi)) - (n+1)/n measures inequality from 0 (equal) to 1 (unequal).</i>
 </p>
 
 <p class="calibri">
-<b>Conclusion.</b> Financial health in Engagement is stable on aggregate but uneven: the strongest, most consistent strain signal comes from household structure—especially families with children sitting near break-even (Figures 4–5). Cost pressures matter most: <b>cost of living</b> is the strongest predictor of SavingsRate (ΔR² 0.828), followed by <b>income</b> (0.408), <b>household size</b> (0.376), and <b>having kids</b> (0.127). Persistent geographic hotspots (Figures 1–2) suggest targeted neighborhood interventions could have outsized impact.
+<b>Conclusion.</b> Financial health in Engagement is stable on aggregate but uneven: the strongest, most consistent strain signal comes from household structure, especially families with children sitting near break-even (Figures 4–5). Cost pressures matter most: <b>cost of living</b> is the strongest predictor of savings rate (ΔR² 0.828), followed by <b>income</b> (0.408), <b>household size</b> (0.376), and <b>having kids</b> (0.127). Persistent geographic hotspots (Figures 1–2) suggest targeted neighborhood interventions could have outsized impact.
+</p>
+
+<p class="calibri">
+<b>Notes on metrics.</b> <b>R²</b> measures how much variance in savings rate a model explains: <b>R² = 1 − SSE/SST</b>. The reported <b>ΔR²</b> values indicate each predictor’s additional (incremental) contribution when added to the multivariate model. <b>η²</b> is an effect-size for group separation: <b>η² = SSB/SST</b>, i.e., the share of variance in a variable explained by cluster membership.
 </p>
 
 <p class="calibri"><b>3</b> - <span class="arial">Describe the health of the various employers within the city limits. What employment patterns do you observe? Do you notice any areas of particularly high or low turnover? Limit your response to 10 images and 500 words.</span></p>
