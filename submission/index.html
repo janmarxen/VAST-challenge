@@ -69,7 +69,7 @@ a:visited {
 </head>
 <body>
 
-<h2 class="calibri center">Entry Name: "Pulse of Engagement"</h2>
+<h2 class="calibri center">Entry Name: UL-Marxen-Sterzel-Gantz-MC3</h2>
 
 <h2 class="calibri center">VAST Challenge 2022<br><u>Challenge 3</u></h2>
 
@@ -97,16 +97,14 @@ Jan Marxen, University of Luxembourg &amp; Sorbonne Université, <a href="mailto
 
 <p class="calibri">Approximately 45 hours (≈15 hours per team member)</p>
 
-<p class="calibri"><b>Video</b></p>
+<p class="calibri"><b>🎬 Video:</b> <a href="#">[VIDEO LINK TO BE ADDED]</a></p>
 
-<p class="calibri"><b><a href="#">[VIDEO LINK TO BE ADDED]</a></b></p>
+<p class="calibri"><b>📂 Repository:</b> <a href="#">https://github.com/janmarxen/VAST-challenge</a></p>
 
 <div class="divider"></div>
 
 <p class="arial">Use visual analytics to analyze the available data and develop responses to the questions to be provided. In addition, prepare a video that shows how you used visual analytics to solve this challenge.</p>
 
-<p>&nbsp;</p>
-<p>&nbsp;</p>
 <p>&nbsp;</p>
 
 <p class="calibri"><b>Questions</b></p>
@@ -118,64 +116,64 @@ Jan Marxen, University of Luxembourg &amp; Sorbonne Université, <a href="mailto
 <p class="calibri"><b>Answer:</b></p>
 
 <p class="calibri">
-We analyzed business prosperity in Engagement using multiple complementary views: an overview of all businesses, temporal revenue trends, weekend vs. weekday patterns, financial health indicators, visit frequencies, market share distribution, performance metrics, and customer demographics.
+<b>Approach and Starting Point.</b> We analyzed the 32 pubs and restaurants in Engagement using the provided data over 15 months (with aggregation). Our entry point is the global filter panel, allowing selection of venue type, specific businesses, customers, and metrics (visits or spending). We define <i>prosperity</i> as sustained or growing revenue and visits, and <i>struggling</i> as declining. We assume checkin spending accurately reflects business revenue.
 </p>
 
 <p class="calibri">
-<b>Business Overview.</b> The overview visualization (Figure 1) provides a comprehensive snapshot of all businesses in Engagement, displaying key metrics such as total revenue, customer counts, and business category. This bird's-eye view allows immediate identification of the largest and smallest players in the local economy, setting the stage for deeper analysis.
+<b>Business Overview.</b> The overview (Figure 1) aggregates key metrics: over 800,000 visits generating modest per-visit spending (under $10). This dashboard establishes baseline context before drill-down analysis.
 </p>
 
 <p class="calibri" style="text-align:center;">
   <img src="./img/businesses_overview.png" alt="Business Overview" style="max-width:90%; margin:10px;"><br>
-  <i>Figure 1: Overview of all businesses in Engagement showing key metrics.</i>
+  <i>Figure 1: Overview of all businesses showing total revenue, visits, and average spending.</i>
 </p>
 
 <p class="calibri">
-<b>Revenue Trends and Weekend Patterns.</b> The trend analysis (Figure 2) tracks revenue over time, revealing which businesses maintain steady income streams versus those experiencing volatility or decline. The weekend comparison (Figure 3) highlights businesses that depend heavily on weekend traffic versus those with consistent weekday revenue—an important distinction for understanding business models and vulnerability to scheduling changes.
+<b>Temporal Trends.</b> The trend visualization (Figure 2) reveals a declining trajectory in total spending, with notable drops around April in both years. At daily resolution (Figure 3), strong weekend peaks emerge: a consistent oscillating pattern useful for distinguishing cyclical behavior from structural decline.
 </p>
 
 <p class="calibri" style="text-align:center;">
   <img src="./img/businesses_trend.png" alt="Business Revenue Trends" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;">
   <img src="./img/businesses_weekends.png" alt="Weekend vs Weekday Patterns" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;"><br>
-  <i>Figure 2 (left): Revenue trends over time. Figure 3 (right): Weekend vs. weekday revenue patterns.</i>
+  <i>Figure 2 (left): Monthly revenue trends. Figure 3 (right): Daily pattern showing weekend peaks.</i>
 </p>
 
 <p class="calibri">
-<b>Financial Health and Visit Frequency.</b> The financial health visualization (Figure 4) combines multiple indicators to assess business stability, while the visits analysis (Figure 5) shows customer traffic patterns. Businesses with high visit frequency but low revenue per visit may be struggling with pricing, whereas those with declining visits face customer retention challenges.
+<b>Growth Analysis.</b> The health visualization (Figures 4 and 5) compares the first and second halves of the dataset. Switching between spending and visit metrics reveals correlation: businesses with declining visits also show declining revenue. Approximately one-third of businesses show slight growth, one-third slight decline, and one-third significant decline. This indicates heterogeneous business health rather than uniform trends.
 </p>
 
 <p class="calibri" style="text-align:center;">
   <img src="./img/businesses_health.png" alt="Business Financial Health" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;">
   <img src="./img/businesses_visits.png" alt="Business Visit Frequency" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;"><br>
-  <i>Figure 4 (left): Financial health indicators. Figure 5 (right): Visit frequency analysis.</i>
+  <i>Figure 4 (left): Spending growth by business. Figure 5 (right): Visit growth by business.</i>
 </p>
 
 <p class="calibri">
-<b>Market Share and Performance.</b> The market share distribution (Figure 6) reveals competitive dynamics within Engagement's economy—a few businesses dominate their categories while others struggle for visibility. The performance visualization (Figure 7) ranks businesses by key success metrics, clearly identifying top performers and those falling behind.
+<b>Market Concentration.</b> The market share bar plot (Figure 6) reveals that two pubs (P#1342, P#1344) capture approximately 20% of total spending. The scatterplot (Figure 7) encodes visits, spending, and market share simultaneously; linked brushing enables cross-chart exploration. Pubs dominate both metrics, likely due to higher per-visit spending compared to restaurants.
 </p>
 
 <p class="calibri" style="text-align:center;">
   <img src="./img/businesses_marketshare.png" alt="Market Share Distribution" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;">
   <img src="./img/businesses_performance.png" alt="Business Performance Ranking" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;"><br>
-  <i>Figure 6 (left): Market share distribution by category. Figure 7 (right): Business performance ranking.</i>
+  <i>Figure 6 (left): Market share distribution. Figure 7 (right): Performance scatterplot with size encoding market share.</i>
 </p>
 
 <p class="calibri">
-<b>Customer Demographics.</b> Understanding who patronizes each business provides insight into prosperity drivers. The customer analysis views (Figures 8–9) segment patrons by demographic characteristics, revealing whether businesses serve diverse or narrow customer bases—a key indicator of resilience and growth potential.
+<b>Individual Customer Patterns.</b> Filtering to a single high-frequency customer (Figures 8 and 9) reveals individual preferences diverging from aggregate trends. This customer's spending concentrates on a favorite restaurant (R#896, 26%) and an emerging pub (P#894, +27.7% growth), while completely abandoning another venue (R#1349) in the second half. This demonstrates how micro-level analysis can surface early signals of shifting preferences.
 </p>
 
 <p class="calibri" style="text-align:center;">
-  <img src="./img/businesses_customer1.png" alt="Customer Demographics View 1" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;">
-  <img src="./img/businesses_customer2.png" alt="Customer Demographics View 2" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;"><br>
-  <i>Figure 8 (left): Customer demographic breakdown. Figure 9 (right): Customer spending patterns by segment.</i>
+  <img src="./img/businesses_customer1.png" alt="Customer Market Share" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;">
+  <img src="./img/businesses_customer2.png" alt="Customer Business Health" style="max-width:48%; margin:5px; display:inline-block; vertical-align:top;"><br>
+  <i>Figure 8 (left): Individual customer spending distribution. Figure 9 (right): Customer-level growth analysis.</i>
 </p>
 
 <p class="calibri">
-<b>Why this design works.</b> These coordinated views enable multi-faceted business assessment: the overview provides context, temporal views reveal trends and seasonality, health and visit metrics quantify performance, market share shows competitive position, and customer demographics explain underlying demand. Together, they answer both "which businesses are thriving or struggling" and "why."
+<b>Design Rationale.</b> The visualization progresses from overview (Figure 1) to temporal filtering (trend charts) to individual detail (customer analysis). Coordinated views with hover-linking support cross-chart exploration. The split-period comparison directly addresses "growing or shrinking" by quantifying change rather than relying on visual trend interpretation alone.
 </p>
 
 <p class="calibri">
-<b>Conclusion.</b> Prosperous businesses in Engagement exhibit stable or growing revenue trends, diversified customer bases, strong market share positions, and healthy visit-to-revenue ratios. Struggling businesses show declining trends, weekend-dependent revenue, narrow customer demographics, or poor conversion of visits to revenue. The visualizations make these distinctions immediately apparent and support targeted intervention recommendations.
+<b>Conclusion.</b> <b>Prosperous:</b> Pubs in general outperform restaurants in both volume and per-visit revenue, with P#1342 and P#1344 dominating market share. <b>Struggling:</b> Even the top performers decline significantly in the second half; approximately one-third of all businesses show substantial drops in both visits and spending. <b>Overall trend:</b> The majority of businesses are shrinking, with aggregate spending declining over the 15-month period.
 </p>
 
 <p class="calibri"><b>2</b> - <span class="arial">How does the financial health of the residents change over the period covered by the dataset? How do wages compare to the overall cost of living in Engagement? Are there groups that appear to exhibit similar patterns? Describe your rationale for your answers. Limit your response to 10 images and 500 words.</span></p>
