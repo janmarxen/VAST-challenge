@@ -1,6 +1,5 @@
-\documentclass{beamer}
+\documentclass[xcolor={usenames,dvipsnames}]{beamer}
 \usepackage[unilu,en]{collegeBeamer}
-\usepackage[usenames,dvipsnames]{xcolor}
 \setbeamertemplate{footline}[frame number]
 \usepackage{graphicx}
 \usepackage{tikz}
@@ -93,48 +92,112 @@
 \section{Question 1: Business Prosperity}
 % ==============================================================================
 
-\begin{frame}{Q1: Business Prosperity}
+\begin{frame}{\faStore\ Dashboard Overview}
     \centering
-    \vspace{1cm}
-    
-    {\Large \textbf{[PLACEHOLDER FOR THOMAS]}}
-    
-    \vspace{1cm}
-    
-    \begin{itemize}
-        \item Which businesses are thriving vs. struggling?
-        \item Revenue trends over time
-        \item Market share evolution
-    \end{itemize}
-    
-    \vspace{1cm}
-    
-    % TODO: Add screenshots of business visualizations
-    \fbox{\parbox{0.7\textwidth}{\centering\vspace{1.5cm}\textbf{[SCREENSHOT: Business Visualizations]}\vspace{1.5cm}}}
+    \includegraphics[height=0.92\textheight]{img/businesses_explanation1.png}
 \end{frame}
 
-\begin{frame}{Q1: Key Findings}
+\begin{frame}{\faChartLine\ Growth Analysis}
     \centering
-    \vspace{1cm}
+    \includegraphics[height=0.75\textheight]{img/businesses_explanation2.png}
     
-    {\Large \textbf{[PLACEHOLDER FOR THOMAS]}}
+    \vspace{8pt}
+    \fbox{\parbox{0.9\textwidth}{\small\centering
+        \faLightbulb\ \textbf{Key Insight:} Revenue drops in April $\cdot$ Business health is heterogeneous:\\
+        $\sim$1/3 growth \textcolor{green!60!black}{\faArrowUp} \quad $\sim$1/3 slight decline \textcolor{orange}{\faArrowDown} \quad $\sim$1/3 significant decline \textcolor{red!70!black}{\faArrowDown}
+    }}
+\end{frame}
+
+\begin{frame}{\faChartPie\ Market Concentration}
+    \centering
+    \includegraphics[height=0.75\textheight]{img/businesses_explanation3.png}
     
-    \vspace{1cm}
-    
-    \begin{columns}
+    \vspace{8pt}
+    \fbox{\parbox{0.85\textwidth}{\small\centering
+        \faLightbulb\ \textbf{Key Insight:} Two pubs capture 20\% of total spending $\cdot$ Pubs dominate restaurants
+    }}
+\end{frame}
+
+\begin{frame}{\faClock\ Temporal Trends}
+    \begin{columns}[T]
         \begin{column}{0.48\textwidth}
-            \textbf{Prosperous Businesses}
+            \centering
+            \includegraphics[width=0.85\textwidth]{img/businesses_trend.png}\\[2pt]
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \centering
+            \includegraphics[width=0.85\textwidth]{img/businesses_weekends.png}\\[2pt]
+        \end{column}
+    \end{columns}
+    
+    \vspace{8pt}
+    \hspace{1cm}\fbox{\parbox{0.85\textwidth}{\small\centering
+        \faLightbulb\ \textbf{Key Insight:} Weekend oscillation distinguishes cyclical from structural decline
+    }}
+\end{frame}
+
+\begin{frame}{\faUser\ Individual Customer Patterns}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \centering
+            \includegraphics[width=0.85\textwidth]{img/businesses_customer1.png}\\[3pt]
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \centering
+            \includegraphics[width=0.85\textwidth]{img/businesses_customer2.png}\\[3pt]
+        \end{column}
+    \end{columns}
+    
+    \vspace{8pt}
+    \hspace{1cm}\fbox{\parbox{0.85\textwidth}{\small
+        \faLightbulb\ \textbf{Micro-level signals:}
+        \faHeart\ R\#896: 26\% share $\cdot$
+        \faRocket\ P\#894: +27.7\% growth $\cdot$
+        \faBan\ R\#1349: abandoned
+    }}
+\end{frame}
+
+\begin{frame}{\faClipboardList\ Key Findings}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            {\large \textcolor{green!60!black}{\faThumbsUp\ Prosperous}}
             \begin{itemize}
-                \item [To be filled by teammate]
+                \item[\textcolor{green!60!black}{\faCheck}] Pubs outperform restaurants
+                \item[\textcolor{green!60!black}{\faCheck}] P\#1342, P\#1344 dominate market
             \end{itemize}
         \end{column}
         \begin{column}{0.48\textwidth}
-            \textbf{Struggling Businesses}
+            {\large \textcolor{red!70!black}{\faThumbsDown\ Struggling}}
             \begin{itemize}
-                \item [To be filled by teammate]
+                \item[\textcolor{red!70!black}{\faTimes}] Top performers decline in H2
+                \item[\textcolor{red!70!black}{\faTimes}] $\sim$1/3 show substantial drops
             \end{itemize}
         \end{column}
     \end{columns}
+    
+    \vspace{15pt}
+    \centering
+    \fcolorbox{red!50!black}{red!5}{\parbox{0.85\textwidth}{\centering
+        \faExclamationTriangle\ \textbf{Overall:} Aggregate spending declining over 15 months
+    }}
+\end{frame}
+
+\begin{frame}{\faPencilRuler\ Design Rationale}
+    \textbf{\faLayerGroup\ Visualization Progression}
+    \begin{enumerate}
+        \item[\faEye] \textbf{Overview} $\rightarrow$ establish baseline context
+        \item[\faFilter] \textbf{Temporal filtering} $\rightarrow$ identify patterns over time
+        \item[\faSearchPlus] \textbf{Individual detail} $\rightarrow$ surface micro-level signals
+    \end{enumerate}
+    
+    \vspace{12pt}
+    \textbf{\faCogs\ Key Design Decisions}
+    \begin{itemize}
+        \item[\faLink] \textbf{Coordinated views:} hover-linking for cross-chart exploration
+        \item[\faBalanceScale] \textbf{Split-period comparison:} quantifies growth directly
+        \item[\faSlidersH] \textbf{Global filters:} all-to-all, one-to-all, one-to-one analysis
+        \item[\faChartBar] \textbf{Dual metrics:} visits and spending reveal correlation
+    \end{itemize}
 \end{frame}
 
 % ==============================================================================
