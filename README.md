@@ -1,22 +1,38 @@
 # VAST Project - Containerized Web Application
 
-This submission contains a containerized backend (Flask API) and frontend (React + Nginx), provided as **pre-built Docker images** for execution without rebuilding.
+This submission release contains a containerized backend (Flask API) and frontend (React + Nginx), provided as **pre-built Docker images** for execution without rebuilding.
 
 ## Requirements
 - Docker ≥ 24
 - Docker Compose (v2)
 
-## Files Included
+## Getting the Files
+Release link: 
+https://github.com/janmarxen/VAST-challenge/releases/tag/submission-v1.0.0 
+
+Instead of building the application yourself, please download the following file from the release: `vast-submission.tar.gz`.
+
+Files inside this zip are:
 - `backend.tar` - pre-built backend Docker image
 - `frontend.tar` - pre-built frontend Docker image
+- `docker-compose.yml` - production docker composer
 - `processed.tar.gz` - precomputed `data/processed` cache (recommended)
-- `docker-compose.yml`
-- `README.md`
+- `README.md` - instructions
 
-Instead of building the application yourself, please download `backend.tar`, `frontend.tar`, and `processed.tar.gz` from:
-https://github.com/janmarxen/VAST-challenge/releases/tag/submission-v1.0.0
+Now you need to extract them and follow the instructions.
 
-## How to Run
+#### Linux / macOS
+Open a terminal in the folder where `vast-submission.tar.gz` is located and run:
+
+```bash
+tar -xzf vast-submission.tar.gz
+```
+#### Windows (PowerShell)
+```bash
+Expand-Archive -Path vast-submission.zip -DestinationPath .
+```
+
+## Instructions: How to Run
 
 1. Extract the precomputed cache into `data/processed`:
 
@@ -47,10 +63,10 @@ http://localhost:8080
 
 ## Optional (if files are missing)
 
-If `backend.tar` / `frontend.tar` are not available, build and run from source:
+If `backend.tar` / `frontend.tar` are not available, build and run from source code (after unzipping the source code artifact from the submission release):
 
 ```bash
-docker compose up --build
+docker compose -f docker-compose.dev.yml up --build
 ```
 
 If you want to recompute `data/processed` yourself (instead of using `processed.tar.gz`), extract all CSVs from `VAST-Challenge-2022.zip` into `data/raw` (flat, no subfolders):
