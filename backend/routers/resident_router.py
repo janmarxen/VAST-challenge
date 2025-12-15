@@ -16,7 +16,8 @@ from services.resident_service import (
     get_parallel_coordinates_data,
     get_geographic_financial_health,
     get_expense_analysis_data,
-    get_inequality_over_time
+    get_inequality_over_time,
+    get_driver_stats
 )
 
 bp = Blueprint('resident', __name__)
@@ -133,6 +134,21 @@ def inequality_timeline():
     """
     try:
         data = get_inequality_over_time()
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/driver-stats', methods=['GET'])
+def driver_stats():
+    """Get lightweight driver statistics for reporting.
+
+    Query params:
+    - top_n: number of top features to return (default: 5)
+    """
+    top_n = request.args.get('top_n', default=5, type=int)
+    try:
+        data = get_driver_stats(top_n=top_n)
         return jsonify(data), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

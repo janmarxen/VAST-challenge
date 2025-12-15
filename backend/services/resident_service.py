@@ -5,12 +5,339 @@ Contains data processing logic for resident financial health analysis.
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.inspection import permutation_importance
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import KFold, cross_val_score
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 import os
 import pickle
 from pathlib import Path
 
 # Global cache for data
 _DATA_CACHE = {}
+
+# Bump this when the resident cached outputs (especially clustering features) change.
+_RESIDENT_CACHE_VERSION = 2
+
+
+_EDUCATION_LEVEL_CATEGORIES = [
+    'Low',
+    'HighSchoolOrCollege',
+    'Bachelors',
+    'Graduate',
+    'Unknown',
+]
+
+
+def _coerce_have_kids_to_int(series: pd.Series) -> pd.Series:
+    if series is None:
+        return pd.Series(dtype='int64')
+
+    if series.dtype == bool:
+        return series.astype('int64')
+
+    text = series.astype(str).str.strip().str.lower()
+    truthy = {'true', 't', 'yes', 'y'}
+    falsy = {'false', 'f', 'no', 'n', 'none', 'nan', ''}
+
+    out = pd.Series(np.nan, index=series.index, dtype='float64')
+    out[text.isin(truthy)] = 1
+    out[text.isin(falsy)] = 0
+
+    remaining = out.isna()
+    if remaining.any():
+        numeric = pd.to_numeric(series[remaining], errors='coerce')
+        out.loc[remaining] = numeric.fillna(0).clip(0, 1)
+
+    return out.fillna(0).astype('int64')
+
+
+def _build_resident_cluster_features(merged: pd.DataFrame) -> pd.DataFrame:
+    """Deprecated: use `_build_resident_clustering_features`.
+
+    This name is kept for backward compatibility inside the codebase.
+    """
+    return _build_resident_clustering_features(merged)
+
+
+def _build_resident_clustering_features(merged: pd.DataFrame) -> pd.DataFrame:
+    """Build the feature matrix used for resident clustering.
+
+    IMPORTANT: Expenditure categories (e.g., Education/Food/Recreation) are
+    intentionally excluded from the clustering procedure.
+
+    Includes:
+    - numeric: age, householdSize, Income, CostOfLiving, SavingsRate
+    - `haveKids` (0/1)
+    - one-hot encoded `educationLevel`
+    """
+    numeric_cols = ['age', 'householdSize', 'Income', 'CostOfLiving', 'SavingsRate']
+    features = merged[numeric_cols].copy()
+
+    if 'haveKids' in merged.columns:
+        features['haveKids'] = _coerce_have_kids_to_int(merged['haveKids'])
+
+    if 'educationLevel' in merged.columns:
+        education = merged['educationLevel'].fillna('Unknown')
+        education = pd.Categorical(education, categories=_EDUCATION_LEVEL_CATEGORIES)
+        dummies = pd.get_dummies(education, prefix='educationLevel')
+        features = pd.concat([features, dummies], axis=1)
+
+    return features
+
+
+def _build_resident_savings_prediction_features(merged: pd.DataFrame) -> pd.DataFrame:
+    """Feature matrix for predicting SavingsRate.
+
+    Unlike clustering, prediction may use spending categories if present.
+    """
+    numeric_cols = ['age', 'householdSize', 'Income', 'CostOfLiving', 'SavingsRate']
+    features = merged[numeric_cols].copy()
+
+    # Optional spending categories for prediction (not for clustering)
+    if 'Education' in merged.columns:
+        features['Education'] = merged['Education']
+    if 'Food' in merged.columns:
+        features['Food'] = merged['Food']
+
+    if 'haveKids' in merged.columns:
+        features['haveKids'] = _coerce_have_kids_to_int(merged['haveKids'])
+
+    if 'educationLevel' in merged.columns:
+        education = merged['educationLevel'].fillna('Unknown')
+        education = pd.Categorical(education, categories=_EDUCATION_LEVEL_CATEGORIES)
+        dummies = pd.get_dummies(education, prefix='educationLevel')
+        features = pd.concat([features, dummies], axis=1)
+
+    return features
+
+
+def _relabel_clusters_for_palette(merged: pd.DataFrame, cluster_col: str = 'Cluster') -> pd.DataFrame:
+    """Relabel KMeans cluster IDs to keep palette/semantics stable.
+
+    Frontend maps cluster IDs to colors by numeric order:
+      0 -> blue, 1 -> orange, 2 -> red
+
+    We want these semantics to stay stable across re-trainings:
+      - Stretched Households (blue): lowest savings capacity
+      - Lean Savers (orange): lowest cost of living among non-affluent
+      - Affluent Achievers (red): highest income
+    """
+    if cluster_col not in merged.columns:
+        return merged
+
+    labels = sorted(pd.unique(merged[cluster_col].dropna()))
+    if len(labels) != 3:
+        return merged
+
+    required = {'Income', 'CostOfLiving', cluster_col}
+    if not required.issubset(set(merged.columns)):
+        return merged
+
+    summary = (
+        merged.groupby(cluster_col, dropna=True)
+        .agg(
+            Income_mean=('Income', 'mean'),
+            CostOfLiving_mean=('CostOfLiving', 'mean'),
+            SavingsRate_mean=('SavingsRate', 'mean') if 'SavingsRate' in merged.columns else ('Income', 'mean'),
+        )
+        .reset_index()
+    )
+
+    # Affluent: highest income (tie-breaker: higher savings rate)
+    affluent_row = summary.sort_values(['Income_mean', 'SavingsRate_mean'], ascending=[False, False]).iloc[0]
+    affluent_label = int(affluent_row[cluster_col])
+
+    remaining = summary[summary[cluster_col] != affluent_label]
+    if remaining.empty:
+        return merged
+
+    # Stretched: lowest savings rate among remaining clusters
+    stretched_label = int(remaining.sort_values('SavingsRate_mean', ascending=True).iloc[0][cluster_col])
+
+    remaining2 = remaining[remaining[cluster_col] != stretched_label]
+    if remaining2.empty:
+        return merged
+
+    # Lean: the remaining cluster (typically low cost / decent savings)
+    lean_label = int(remaining2.iloc[0][cluster_col])
+
+    mapping = {
+        stretched_label: 0,
+        lean_label: 1,
+        affluent_label: 2,
+    }
+    merged = merged.copy()
+    merged[cluster_col] = merged[cluster_col].map(mapping).astype(int)
+    return merged
+
+
+def _eta_squared_by_cluster(values: pd.Series, clusters: pd.Series) -> float:
+    """Effect size of cluster separation for a numeric feature."""
+    x = pd.to_numeric(values, errors='coerce')
+    c = clusters
+    valid = x.notna() & c.notna()
+    x = x[valid]
+    c = c[valid]
+    if x.empty:
+        return 0.0
+
+    overall_mean = float(x.mean())
+    ss_total = float(((x - overall_mean) ** 2).sum())
+    if ss_total <= 0:
+        return 0.0
+
+    grouped = x.groupby(c)
+    means = grouped.mean()
+    counts = grouped.size()
+    ss_between = float(((means - overall_mean) ** 2 * counts).sum())
+    return max(0.0, min(1.0, ss_between / ss_total))
+
+
+def _cramers_v(x: pd.Series, y: pd.Series) -> float:
+    """Cramér's V association for two categorical variables (no scipy dependency)."""
+    x = x.fillna('Unknown')
+    y = y.fillna('Unknown')
+    table = pd.crosstab(x, y)
+    n = float(table.values.sum())
+    if n <= 0:
+        return 0.0
+
+    obs = table.values.astype(float)
+    row_sums = obs.sum(axis=1, keepdims=True)
+    col_sums = obs.sum(axis=0, keepdims=True)
+    expected = row_sums @ (col_sums / n)
+    mask = expected > 0
+    chi2 = float((((obs - expected) ** 2) / np.where(mask, expected, 1.0))[mask].sum())
+
+    r, k = obs.shape
+    denom = n * max(1, min(r - 1, k - 1))
+    if denom <= 0:
+        return 0.0
+    return float(np.sqrt(max(0.0, chi2 / denom)))
+
+
+def _build_savings_prediction_features(merged: pd.DataFrame) -> pd.DataFrame:
+    """Feature matrix for predicting SavingsRate (drops SavingsRate itself)."""
+    base = _build_resident_savings_prediction_features(merged)
+    return base.drop(columns=['SavingsRate'], errors='ignore')
+
+
+def get_driver_stats(top_n: int = 5, random_state: int = 42) -> dict:
+    """Compute lightweight driver statistics for reporting.
+
+    Returns:
+      - which features separate clusters most (effect sizes)
+      - which features are most predictive of SavingsRate (Ridge + permutation importance)
+    """
+    merged_df, _, _ = _get_data()
+
+    # 1) Cluster separation
+    cluster_separation_numeric = []
+    if 'Cluster' in merged_df.columns:
+        feature_matrix = _build_resident_clustering_features(merged_df)
+        for col in feature_matrix.columns:
+            cluster_separation_numeric.append(
+                {
+                    'feature': col,
+                    'eta2': _eta_squared_by_cluster(feature_matrix[col], merged_df['Cluster']),
+                }
+            )
+
+    cluster_separation_numeric.sort(key=lambda d: d['eta2'], reverse=True)
+    cluster_separation_numeric = cluster_separation_numeric[: max(0, int(top_n))]
+
+    cluster_separation_categorical = []
+    if 'Cluster' in merged_df.columns:
+        if 'educationLevel' in merged_df.columns:
+            cluster_separation_categorical.append(
+                {
+                    'feature': 'educationLevel',
+                    'cramersV': _cramers_v(merged_df['educationLevel'].astype(str), merged_df['Cluster'].astype(str)),
+                }
+            )
+        if 'haveKids' in merged_df.columns:
+            hk = _coerce_have_kids_to_int(merged_df['haveKids']).astype(str)
+            cluster_separation_categorical.append(
+                {
+                    'feature': 'haveKids',
+                    'cramersV': _cramers_v(hk, merged_df['Cluster'].astype(str)),
+                }
+            )
+
+    cluster_separation_categorical.sort(key=lambda d: d['cramersV'], reverse=True)
+    cluster_separation_categorical = cluster_separation_categorical[: max(0, int(top_n))]
+
+    # 2) SavingsRate prediction
+    predictors = {
+        'cv_r2_mean': None,
+        'top_coefficients': [],
+        'permutation_importance': [],
+    }
+
+    if 'SavingsRate' in merged_df.columns:
+        X = _build_savings_prediction_features(merged_df)
+        y = pd.to_numeric(merged_df['SavingsRate'], errors='coerce').fillna(0.0)
+
+        # Keep numeric-only matrix for the model
+        X = X.apply(pd.to_numeric, errors='coerce').fillna(0.0)
+
+        model = Pipeline(
+            steps=[
+                ('scaler', StandardScaler()),
+                ('ridge', Ridge(alpha=1.0)),
+            ]
+        )
+
+        try:
+            cv = KFold(n_splits=5, shuffle=True, random_state=random_state)
+            scores = cross_val_score(model, X, y, cv=cv, scoring='r2')
+            predictors['cv_r2_mean'] = float(np.mean(scores))
+        except Exception:
+            predictors['cv_r2_mean'] = None
+
+        model.fit(X, y)
+        ridge = model.named_steps['ridge']
+        coefs = ridge.coef_.ravel()
+        coef_rows = [
+            {'feature': name, 'coef': float(value)} for name, value in zip(X.columns.tolist(), coefs)
+        ]
+        coef_rows.sort(key=lambda d: abs(d['coef']), reverse=True)
+        predictors['top_coefficients'] = coef_rows[: max(0, int(top_n))]
+
+        try:
+            perm = permutation_importance(
+                model,
+                X,
+                y,
+                scoring='r2',
+                n_repeats=10,
+                random_state=random_state,
+            )
+            perm_rows = [
+                {
+                    'feature': name,
+                    'importance_mean': float(mean),
+                    'importance_std': float(std),
+                }
+                for name, mean, std in zip(X.columns.tolist(), perm.importances_mean, perm.importances_std)
+            ]
+            perm_rows.sort(key=lambda d: d['importance_mean'], reverse=True)
+            predictors['permutation_importance'] = perm_rows[: max(0, int(top_n))]
+        except Exception:
+            predictors['permutation_importance'] = []
+
+    return {
+        'cluster_separation': {
+            'numeric_eta2': cluster_separation_numeric,
+            'categorical_cramersV': cluster_separation_categorical,
+        },
+        'savings_predictors': predictors,
+        'meta': {
+            'topN': int(top_n),
+        },
+    }
 
 def _resolve_data_dirs():
     repo_root = Path(__file__).resolve().parents[2]
@@ -41,6 +368,8 @@ def _load_disk_cache(processed_dir: Path, raw_mtime: float):
     except Exception as exc:
         print(f"Failed to load resident cache: {exc}")
         return None
+    if payload.get('cache_version') != _RESIDENT_CACHE_VERSION:
+        return None
     if payload.get('raw_mtime', 0) < raw_mtime:
         return None
     return payload.get('frames')
@@ -49,7 +378,7 @@ def _persist_disk_cache(frames: dict, processed_dir: Path, raw_mtime: float):
     cache_path = processed_dir / 'resident_data_cache.pkl'
     try:
         with cache_path.open('wb') as f:
-            pickle.dump({'raw_mtime': raw_mtime, 'frames': frames}, f)
+            pickle.dump({'raw_mtime': raw_mtime, 'cache_version': _RESIDENT_CACHE_VERSION, 'frames': frames}, f)
     except Exception as exc:
         print(f"Failed to persist resident cache: {exc}")
 
@@ -193,20 +522,19 @@ def _get_data():
     merged['SavingsRate'] = np.where(merged['Income'] > 0, merged['Savings'] / merged['Income'], 0)
     
     # Perform Clustering
-    # Features for clustering: Age, HouseholdSize, Income, CostOfLiving, Education, SavingsRate
-    features = merged[['age', 'householdSize', 'Income', 'CostOfLiving', 'Education', 'SavingsRate']].copy()
-    # Optionally add more: Food, Recreation
-    if 'Food' in merged.columns:
-        features['Food'] = merged['Food']
-    if 'Recreation' in merged.columns:
-        features['Recreation'] = merged['Recreation']
-    # Simple normalization
-    features = (features - features.mean()) / features.std()
-    # Fill NaNs if any
-    features = features.fillna(0)
+    # Features for clustering: existing numeric financial/demographic metrics
+    # plus one-hot encoded educationLevel and haveKids (0/1).
+    features = _build_resident_clustering_features(merged)
+
+    # Simple normalization (robust to constant columns)
+    means = features.mean(numeric_only=True)
+    stds = features.std(numeric_only=True).replace(0, 1)
+    features = (features - means) / stds
+    features = features.replace([np.inf, -np.inf], np.nan).fillna(0)
     
     kmeans = KMeans(n_clusters=3, random_state=42)
     merged['Cluster'] = kmeans.fit_predict(features)
+    merged = _relabel_clusters_for_palette(merged, cluster_col='Cluster')
     
     # Load Buildings for Geometry
     buildings = pd.read_csv(os.path.join(base_path, 'Buildings.csv'))

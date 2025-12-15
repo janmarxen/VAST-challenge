@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 import WageVsCostScatter from './TabLivingGap/WageVsCostScatter';
 import FinancialTrajectories from './TabFinancialFlow/FinancialTrajectories';
 import ParallelCoordinates from './TabLivingGap/ParallelCoordinates';
@@ -7,6 +8,16 @@ import CityWideExpenses from './TabFinancialFlow/CityWideExpenses';
 import SavingsRateByEducation from './TabLivingGap/SavingsRateByEducation';
 import HouseholdSizeStats from './TabLivingGap/HouseholdSizeStats';
 import InequalityTimeline from './TabFinancialFlow/InequalityTimeline';
+import { CLUSTER_OPTIONS, normalizeClusterValue } from './clusterHelpers';
+
+export function shouldShowFloatingDemographicControls(entry) {
+  if (!entry) return false;
+  // Only float once the controls have scrolled *above* the viewport.
+  // If the user is above the controls (controls are below), do not show the floating bar.
+  const top = entry.boundingClientRect?.top;
+  const isAboveViewport = typeof top === 'number' ? top < 0 : false;
+  return !entry.isIntersecting && isAboveViewport;
+}
 
 /**
  * Resident Financial Health Dashboard (Question 2)
@@ -16,10 +27,90 @@ function ResidentDashboard() {
   const [selectedIds, setSelectedIds] = useState(null);
   const [activeTab, setActiveTab] = useState(1);
   const [filterHaveKids, setFilterHaveKids] = useState(null);
+  const [filterCluster, setFilterCluster] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState('2022-04');
   const [brushedTimeRange, setBrushedTimeRange] = useState(null);
   const [showFloatingTimeControl, setShowFloatingTimeControl] = useState(false);
   const timeControlRef = useRef(null);
+  const demographicControlsRef = useRef(null);
+  const [showFloatingDemographicControls, setShowFloatingDemographicControls] = useState(false);
+  const [driverStats, setDriverStats] = useState(null);
+  const [driverStatsError, setDriverStatsError] = useState(null);
+  const [clusterMedians, setClusterMedians] = useState(null);
+  const [clusterMediansError, setClusterMediansError] = useState(null);
+
+  const median = (values) => {
+    const xs = (Array.isArray(values) ? values : [])
+      .map((v) => Number(v))
+      .filter((v) => Number.isFinite(v))
+      .sort((a, b) => a - b);
+    if (xs.length === 0) return null;
+    const mid = Math.floor(xs.length / 2);
+    if (xs.length % 2 === 1) return xs[mid];
+    return (xs[mid - 1] + xs[mid]) / 2;
+  };
+
+  const currency = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  });
+
+  const formatPct = (value) => {
+    const v = Number(value);
+    if (!Number.isFinite(v)) return '—';
+    return `${(v * 100).toFixed(1)}%`;
+  };
+
+  const formatClusterAnchor = (clusterId) => {
+    if (!clusterMedians) return null;
+    const m = clusterMedians[String(clusterId)];
+    if (!m) return null;
+
+    const income = m.incomeMedian;
+    const cost = m.costMedian;
+    const savings = m.savingsRateMedian;
+
+    const incomeText = Number.isFinite(income) ? currency.format(income) : '—';
+    const costText = Number.isFinite(cost) ? currency.format(cost) : '—';
+    const savingsText = formatPct(savings);
+
+    return `Median: Income ${incomeText} • Cost ${costText} • Savings ${savingsText}`;
+  };
+
+  const formatDriverFeatureLabel = (feature) => {
+    if (!feature) return '';
+    if (feature === 'haveKids') return 'Has kids';
+    if (feature === 'householdSize') return 'Household size';
+    if (feature === 'age') return 'Age';
+    if (feature === 'Income') return 'Income';
+    if (feature === 'CostOfLiving') return 'Cost of living';
+    if (feature === 'Education') return 'Education spending';
+    if (feature === 'Food') return 'Food spending';
+    if (feature === 'SavingsRate') return 'Savings rate';
+    if (feature === 'educationLevel') return 'Education level';
+
+    if (feature.startsWith('educationLevel_')) {
+      const level = feature.replace('educationLevel_', '');
+      const pretty = {
+        Low: 'Low',
+        HighSchoolOrCollege: 'High school / college',
+        Bachelors: "Bachelor's",
+        Graduate: 'Graduate',
+        Unknown: 'Unknown',
+      };
+      return `Education: ${pretty[level] || level}`;
+    }
+
+    const prettyFallback = String(feature)
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!prettyFallback) return String(feature);
+    return prettyFallback.charAt(0).toUpperCase() + prettyFallback.slice(1);
+  };
 
   // Exclude the first month (2022-03) from the analysis per backend filtering
   const months = [
@@ -81,6 +172,87 @@ function ResidentDashboard() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (activeTab !== 2) {
+      setShowFloatingDemographicControls(false);
+      return;
+    }
+
+    const target = demographicControlsRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setShowFloatingDemographicControls(shouldShowFloatingDemographicControls(entry));
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [activeTab]);
+
+  useEffect(() => {
+    let isMounted = true;
+    setDriverStatsError(null);
+    axios
+      .get('/api/resident/driver-stats?top_n=4')
+      .then((resp) => {
+        if (!isMounted) return;
+        setDriverStats(resp.data);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setDriverStatsError(err?.message || 'Failed to load driver stats');
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    setClusterMediansError(null);
+
+    axios
+      .get(`/api/resident/parallel-coordinates?month=${encodeURIComponent(selectedMonth)}`)
+      .then((resp) => {
+        if (!isMounted) return;
+        const rows = Array.isArray(resp.data) ? resp.data : [];
+
+        const byCluster = new Map();
+        rows.forEach((row) => {
+          const cluster = row?.Cluster;
+          if (cluster === null || cluster === undefined) return;
+          const key = String(Number(cluster));
+          if (!byCluster.has(key)) byCluster.set(key, []);
+          byCluster.get(key).push(row);
+        });
+
+        const medians = {};
+        for (const [clusterKey, clusterRows] of byCluster.entries()) {
+          medians[clusterKey] = {
+            incomeMedian: median(clusterRows.map((r) => r?.Income)),
+            costMedian: median(clusterRows.map((r) => r?.CostOfLiving)),
+            savingsRateMedian: median(clusterRows.map((r) => r?.SavingsRate)),
+          };
+        }
+
+        setClusterMedians(medians);
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        setClusterMedians(null);
+        setClusterMediansError(err?.message || 'Failed to load cluster medians');
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedMonth]);
+
   const renderTimeSlider = (isCompact = false) => (
     <>
       <div className={`flex ${isCompact ? 'flex-col gap-2' : 'justify-between items-center mb-2'}`}>
@@ -112,6 +284,83 @@ function ResidentDashboard() {
   const handleHouseholdFocus = (value) => {
     setFilterHaveKids(prev => (prev === value ? null : value));
   };
+
+  const renderDemographicControls = (isFloating = false) => (
+    <div
+      ref={!isFloating ? demographicControlsRef : null}
+      className={`${isFloating ? 'bg-white/95 backdrop-blur' : ''} rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-600/10 via-indigo-500/5 to-purple-500/10 ${isFloating ? 'p-4 shadow-2xl' : 'p-5 shadow-sm'}`}
+    >
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-xs font-semibold tracking-widest text-blue-900/60 uppercase">Smart highlight</p>
+            <h4 className={`font-semibold text-gray-900 ${isFloating ? 'text-base' : 'text-lg'}`}>Household spotlight</h4>
+            <p className="text-sm text-blue-900/80 max-w-md">
+              Tap a chip to auto-brush the scatter plot and carry the selection through the entire dashboard.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {householdOptions.map(option => {
+              const isActive = filterHaveKids === option.value;
+              return (
+                <button
+                  key={option.label}
+                  onClick={() => handleHouseholdFocus(option.value)}
+                  className={`${baseChip} ${isActive ? chipActive : chipInactive}`}
+                >
+                  <span className={`text-xl ${isActive ? 'opacity-100' : 'opacity-70'}`}>{option.icon}</span>
+                  <div>
+                    <div className="text-sm font-semibold">{option.label}</div>
+                    <p className="text-xs text-blue-900/70">{option.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between pt-4 border-t border-white/40">
+          <div>
+            <p className="text-xs font-semibold tracking-widest text-blue-900/60 uppercase">Filter</p>
+            <h4 className={`font-semibold text-gray-900 ${isFloating ? 'text-sm' : 'text-base'}`}>Cluster</h4>
+            <p className="text-sm text-blue-900/80 max-w-md">Limits both the scatter plot and the PCP.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {CLUSTER_OPTIONS.map((opt) => {
+              const normalized = normalizeClusterValue(filterCluster);
+              const isActive = normalizeClusterValue(opt.value) === normalized;
+              return (
+                <button
+                  key={String(opt.value)}
+                  onClick={() => setFilterCluster(opt.value)}
+                  className={`rounded-full px-3 py-2 text-sm border transition ${isActive ? 'bg-white text-blue-700 border-indigo-200 shadow-sm' : 'bg-white/40 text-blue-900/80 border-white/40 hover:bg-white/60'}`}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    {opt.color ? (
+                      <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: opt.color }} />
+                    ) : (
+                      <span className="inline-block h-2.5 w-2.5 rounded-full bg-gray-300" />
+                    )}
+                    {opt.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  useEffect(() => {
+    // Keep dashboard interactions predictable when cohort changes.
+    setSelectedIds(null);
+  }, [filterCluster]);
+
+  useEffect(() => {
+    // Cohort filter: don't convert this into a massive selection.
+    setSelectedIds(null);
+  }, [filterHaveKids]);
 
   const renderTab1 = () => (
     <div className="space-y-8">
@@ -148,58 +397,45 @@ function ResidentDashboard() {
           Clusters highlight a few recurring household "lifestyles" and how each group balances income, costs and savings.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-700">
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-900 mb-1">How to read this tab</h4>
+          <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+            <h4 className="font-semibold text-red-900 mb-1">Affluent Achievers (red)</h4>
             <p>
-              Start with the <strong>Living Gap</strong> scatter: residents below the red line spend more than they earn.
-              Then use the <strong>Demographic Pattern Finder</strong> to see how household size, costs and savings differ across clusters.
+              Couples and families that <em>tend to</em> have very high incomes while keeping costs relatively controlled,
+              appearing as high-income, high-savings outliers.
             </p>
+            {formatClusterAnchor(2) && (
+              <div className="text-xs text-gray-600 mt-2">{formatClusterAnchor(2)}</div>
+            )}
           </div>
-          <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
-            <h4 className="font-semibold text-emerald-900 mb-1">Key discriminator: household structure</h4>
+          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+            <h4 className="font-semibold text-orange-900 mb-1">Lean Savers (orange)</h4>
             <p>
-              The strongest split is <strong>with vs. without children</strong>. Single adults and couples without kids keep costs lean and tend to save more, while larger families face higher fixed expenses and tighter margins.
+              Households who <em>tend to</em> maintain a slightly lower cost burden relative to income (even at modest
+              incomes), enabling medium-to-high savings rates, often aligned with smaller households / no kids.
             </p>
+            {formatClusterAnchor(1) && (
+              <div className="text-xs text-gray-600 mt-2">{formatClusterAnchor(1)}</div>
+            )}
           </div>
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-            <h4 className="font-semibold text-slate-900 mb-1">What age tells us</h4>
+          <div className="bg-sky-50 p-4 rounded-lg border border-sky-200">
+            <h4 className="font-semibold text-sky-900 mb-1">Stretched Households (blue)</h4>
             <p>
-              Age barely separates the clusters. Younger and older residents appear in every group; what really matters is how many people share a household and how far income rises above basic costs.
+              Residents who <em>tend to</em> face a tighter budget, lower incomes with similar day-to-day costs, leading to
+              lower savings capacity and a higher cost burden relative to income.
             </p>
+            {formatClusterAnchor(0) && (
+              <div className="text-xs text-gray-600 mt-2">{formatClusterAnchor(0)}</div>
+            )}
           </div>
+        </div>
+        <div className="mt-3 text-xs text-gray-500">
+          Clusters overlap; labels summarize dominant patterns, not strict rules.
+          {clusterMediansError ? ` (Anchors unavailable: ${clusterMediansError})` : ''}
         </div>
       </div>
 
       {/* Filter Controls */}
-      <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-600/10 via-indigo-500/5 to-purple-500/10 p-5 shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-xs font-semibold tracking-widest text-blue-900/60 uppercase">Smart highlight</p>
-            <h4 className="text-lg font-semibold text-gray-900">Household spotlight</h4>
-            <p className="text-sm text-blue-900/80 max-w-md">
-              Tap a chip to auto-brush the scatter plot and carry the selection through the entire dashboard.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {householdOptions.map(option => {
-              const isActive = filterHaveKids === option.value;
-              return (
-                <button
-                  key={option.label}
-                  onClick={() => handleHouseholdFocus(option.value)}
-                  className={`${baseChip} ${isActive ? chipActive : chipInactive}`}
-                >
-                  <span className={`text-xl ${isActive ? 'opacity-100' : 'opacity-70'}`}>{option.icon}</span>
-                  <div>
-                    <div className="text-sm font-semibold">{option.label}</div>
-                    <p className="text-xs text-blue-900/70">{option.description}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      {renderDemographicControls(false)}
 
       {/* Visualizations */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col" style={{ height: '600px' }}>
@@ -207,6 +443,7 @@ function ResidentDashboard() {
           onFilter={setSelectedIds} 
           selectedIds={selectedIds}
           filterHaveKids={filterHaveKids} 
+          filterCluster={filterCluster}
           selectedMonth={selectedMonth}
           brushedTimeRange={brushedTimeRange}
         />
@@ -215,12 +452,41 @@ function ResidentDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col min-h-[780px]">
           <div className="mb-3 text-sm text-gray-700">
-            <p className="mb-1"><strong>Cluster personas:</strong></p>
-            <ul className="list-disc ml-5 space-y-1">
-              <li><strong className="text-red-600">Affluent Achievers (red)</strong>: couples and families with very high incomes who keep costs in check, appearing as high-income, high-savings outliers.</li>
-              <li><strong className="text-sky-700">Stretched Households (blue)</strong>: lower-income residents with average living costs, leaving little room to save and clustering near the low-savings region.</li>
-              <li><strong className="text-orange-600">Lean Savers (orange)</strong>: mostly single adults without children, with average incomes but very low costs, achieving medium to high savings rates.</li>
-            </ul>
+            <div className="mt-3 text-xs text-gray-600">
+              <p className="mb-1"><strong>Top drivers (data-backed):</strong></p>
+              {driverStatsError ? (
+                <p className="text-xs text-amber-800">{driverStatsError}</p>
+              ) : !driverStats ? (
+                <p className="text-xs text-gray-500">Loading…</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <p className="mb-1 font-semibold text-gray-700">Cluster separation (η²)</p>
+                      <ol className="list-decimal ml-5 space-y-0.5">
+                        {(driverStats.cluster_separation?.numeric_eta2 || []).map((d) => (
+                          <li key={d.feature}>
+                            <span className="font-medium">{formatDriverFeatureLabel(d.feature)}</span>{' '}
+                            <span className="text-gray-500">({(Number(d.eta2) * 100).toFixed(1)}%)</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                    <div>
+                      <p className="mb-1 font-semibold text-gray-700">Savings rate predictors (ΔR²)</p>
+                      <ol className="list-decimal ml-5 space-y-0.5">
+                        {(driverStats.savings_predictors?.permutation_importance || []).map((d) => (
+                          <li key={d.feature}>
+                            <span className="font-medium">{formatDriverFeatureLabel(d.feature)}</span>{' '}
+                            <span className="text-gray-500">({Number(d.importance_mean).toFixed(3)})</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
           <div className="flex-1 min-h-[620px]">
             <ParallelCoordinates
@@ -228,6 +494,7 @@ function ResidentDashboard() {
               onFilter={setSelectedIds}
               selectedMonth={selectedMonth}
               filterHaveKids={filterHaveKids}
+              filterCluster={filterCluster}
               onTimeBrush={setBrushedTimeRange}
             />
           </div>
@@ -339,6 +606,14 @@ function ResidentDashboard() {
             <div className="bg-white/95 backdrop-blur border border-gray-200 rounded-2xl shadow-2xl p-4 sm:w-80">
               <div className="text-xs uppercase tracking-wide text-gray-500 mb-1">Quick adjust</div>
               {renderTimeSlider(true)}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 2 && showFloatingDemographicControls && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 px-4 z-50 w-full">
+            <div className="w-full max-w-[95%] mx-auto">
+              {renderDemographicControls(true)}
             </div>
           </div>
         )}

@@ -20,7 +20,7 @@ services:
   resident-tests:
     <<: *backend-test
     container_name: vast-resident-tests
-    command: ["pytest", "tests/test_resident_router.py"]
+    command: ["pytest", "tests/test_resident_router.py", "tests/test_resident_clustering_features.py"]
 
   employer-tests:
     <<: *backend-test
