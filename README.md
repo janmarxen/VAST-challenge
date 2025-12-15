@@ -9,18 +9,20 @@ This submission contains a containerized backend (Flask API) and frontend (React
 ## Files Included
 - `backend.tar` - pre-built backend Docker image
 - `frontend.tar` - pre-built frontend Docker image
+- `processed.tar.gz` - precomputed `data/processed` cache (recommended)
 - `docker-compose.yml`
 - `README.md`
 
+Instead of building the application yourself, please download `backend.tar`, `frontend.tar`, and `processed.tar.gz` from:
+https://github.com/janmarxen/VAST-challenge/releases/tag/submission-v1.0.0
+
 ## How to Run
 
-1. Extract all CSVs from `VAST-Challenge-2022.zip` into `data/raw` (flat, no subfolders):
+1. Extract the precomputed cache into `data/processed`:
 
 ```bash
-mkdir -p data/raw
-zipinfo -1 VAST-Challenge-2022.zip | grep -Ei '\.csv$' | while read -r f; do
-	unzip -q -j VAST-Challenge-2022.zip "$f" -d data/raw
-done
+mkdir -p data
+tar -xzf processed.tar.gz -C data
 ```
 
 2. Load the Docker images:
@@ -41,7 +43,24 @@ docker compose up
 http://localhost:8080
 ```
 
-**Important**: When running the application for the first time, the system will generate data in the `data/processed` folder. This initial processing may take 1–2 hours due to the large volume of data. Once completed, the results are cached and subsequent runs of the application will be significantly faster.
+**Important**: If you skip `processed.tar.gz`, the app will generate `data/processed` on first run, which can take 1–2 hours.
+
+## Optional (if files are missing)
+
+If `backend.tar` / `frontend.tar` are not available, build and run from source:
+
+```bash
+docker compose up --build
+```
+
+If you want to recompute `data/processed` yourself (instead of using `processed.tar.gz`), extract all CSVs from `VAST-Challenge-2022.zip` into `data/raw` (flat, no subfolders):
+
+```bash
+mkdir -p data/raw
+zipinfo -1 VAST-Challenge-2022.zip | grep -Ei '\.csv$' | while read -r f; do
+	unzip -q -j VAST-Challenge-2022.zip "$f" -d data/raw
+done
+```
 
 ## Notes
 
