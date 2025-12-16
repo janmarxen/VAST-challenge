@@ -202,8 +202,8 @@
     ]
         \node[box, fill=gray!15] (data) {Resident data\\(income, costs, household)};
         \node[box, fill=orange!20, below left=10pt and 18pt of data] (cluster) {Geographic\\context};
-        \node[box, fill=green!20, below right=10pt and 18pt of data] (ineq) {Inequality\\(over time)};
-        \node[box, fill=blue!20, below=22pt of data] (geo) {Clustering\\(K-Means)};
+        \node[box, fill=green!20, below right=10pt and 18pt of data] (ineq) {Expenses and Inequality\\(over time)};
+        \node[box, fill=blue!20, below=22pt of data] (geo) {Demographic\\(Clustering)};
 
         \draw[arr] (data) -- (cluster);
         \draw[arr] (data) -- (ineq);
@@ -225,8 +225,8 @@
             \centering
             \footnotesize
             \begin{itemize}\setlength{\itemsep}{1pt}
-                \item Wage vs. cost features
-                \item K-Means segmentation
+                \item Demographic, expense and salary features
+                \item K-Means clustering
                 \item Personas \& drivers
             \end{itemize}
         \end{column}
@@ -265,6 +265,44 @@
         \begin{column}{0.52\textwidth}
             \centering
             \includegraphics[width=\textwidth,height=0.80\textheight,keepaspectratio]{img/geog_fin_health.png}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Clustering Summary (k = 3)}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            	\textbf{Model Choice}
+            \footnotesize
+            \begin{itemize}\setlength{\itemsep}{2pt}
+                \item Elbow plot used to balance fit vs. complexity
+                \item Smallest stable solution selected: \textbf{$k=3$ clusters}
+                \item Used all participant data (+ financial journal) 
+            \end{itemize}
+
+            \vspace{6pt}
+            	\textbf{How It’s Used in the Dashboard}
+            \footnotesize
+            \begin{itemize}\setlength{\itemsep}{2pt}
+                \item \textbf{Cluster} filter applied to the PCP
+                \item Same filter applied to the \textbf{Living Gap scatterplot}
+                \item Global time slider
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.50\textwidth}
+            \centering
+            \vspace{2pt}
+            \begin{tikzpicture}[
+                node distance=8pt,
+                cbox/.style={rectangle, draw, rounded corners, minimum width=4.6cm, minimum height=0.85cm, font=\scriptsize, align=center}
+            ]
+                \node[cbox, fill=red!15, draw=red!60!black] (c1) {\textbf{Affluent Achievers}\\High income, strong buffer};
+                \node[cbox, fill=blue!15, draw=blue!70!black, below=10pt of c1] (c2) {\textbf{Stretched Households}\\Kids \& tight budgets};
+                \node[cbox, fill=orange!20, draw=orange!70!black, below=10pt of c2] (c3) {\textbf{Lean Savers}\\Moderate income, lower costs};
+
+                % \draw[->, thick] (c1.south) -- (c2.north);
+                % \draw[->, thick] (c2.south) -- (c3.north);
+            \end{tikzpicture}
         \end{column}
     \end{columns}
 \end{frame}
